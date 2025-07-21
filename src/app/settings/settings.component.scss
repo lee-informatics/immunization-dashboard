@@ -1,0 +1,38 @@
+// Author: Preston Lee
+
+// @import "../stylesheets/common.scss";
+// @use "../stylesheets/common.scss";
+
+#settings {
+    padding-top: 20px;
+
+//     margin-top: 20px;
+//     padding: 40px 20px;
+//     background: url(/assets/images/textures/crossword.png) repeat center center fixed;
+// border-radius: 2px;
+//     box-shadow: 0 40px 40px black;
+    // height: 100vh;
+
+
+    h1 {
+        text-shadow: 0 10px 10px rgba(0, 0, 0, .2);
+    }
+
+    .workstream_name {
+        cursor: pointer;
+        text-decoration: underline;
+    }
+    th {
+        cursor: pointer;
+    }
+    td {
+        border: 0;
+    }
+
+    .form-check {
+        label {
+            cursor: pointer;
+        }
+    }
+
+}

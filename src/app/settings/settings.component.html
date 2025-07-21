@@ -1,0 +1,53 @@
+<div id="settings" class="container">
+    
+    <div class="row">
+        <div class="col-sm-12">
+            <h1><span class="bi bi-gear"></span> Advanced Settings</h1>
+        </div>
+        <div class="col-sm-6">
+            <div class="form-check mt-3 ms-1 ">
+                <input id="experimental_switch" class="form-check-input" type="checkbox" name="experimental_switch"
+                    [(ngModel)]="settingsService.settings.experimental" />
+                <label class="form-check-label" for="experimental_switch"><span
+                        class="bi bi-exclamation-diamond"></span> Experimental
+                    Features</label>
+                    <br />
+
+                <small class="form-text">This is used for testing upcoming features and may break existing
+                    functionality. You probably don't want to use this!</small>
+
+            </div>
+            <div class="form-check mt-3 ms-1 ">
+                <input id="developer_switch" class="form-check-input" type="checkbox" name="developer_switch"
+                    [(ngModel)]="settingsService.settings.developer" />
+                <label class="form-check-label" for="developer_switch"><span class="bi bi-code"></span> Developer
+                    Mode</label>
+                <br />
+                <small class="form-text">Enabling debugging messages for software developers working on source
+                    code.</small>
+
+            </div>
+
+        </div>
+        <div class="col-sm-6">
+
+            <div class="form-check mt-3 ms-1 ">
+                <input id="descriptions_switch" class="form-check-input" type="checkbox" name="descriptions_switch"
+                    [(ngModel)]="settingsService.settings.show_descriptions" />
+                <label class="form-check-label" for="descriptions_switch"><span class="bi bi-info-circle"></span> Show Descriptions</label>
+                <br />
+                <small class="form-text">Display detailed help text when available.</small>
+
+            </div>
+        </div>
+        <div class="col-sm-12">
+            <br>
+            <button class="btn btn-primary" (click)="save()"><span class="bi bi-file-check"></span> Save for Future Sessions</button>
+
+            <!-- <div class="btn-group"> -->
+            <button class="btn float-end" (click)="restore()"><span class="bi bi-arrow-counterclockwise"></span>
+                Reset to Defaults</button>
+            <!-- </div> -->
+        </div>
+    </div>
+</div>

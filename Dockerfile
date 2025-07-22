@@ -25,4 +25,6 @@ RUN rm -rf *
 COPY --from=builder /app/dist/immunization-dashboard .
 
 # CMD ["./configure-from-environment.sh", "&&", "exec", "nginx", "-g", "'daemon off;'"]
-CMD envsubst < public/configuration.template.js > public/configuration.js  && exec nginx -g 'daemon off;'
+# CMD envsubst < public/configuration.template.js > public/configuration.js  && exec nginx -g 'daemon off;'
+CMD ["sh", "-c", "envsubst < configuration.template.js > configuration.js && exec nginx -g 'daemon off;'"]
+

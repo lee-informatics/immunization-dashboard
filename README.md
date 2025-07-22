@@ -12,6 +12,19 @@ npm run start
 
 Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
 
+## Running as a Docker Container
+
+To run the application on docker, run 
+```bash
+docker build -t immunization-dashboard . 
+```
+
+Once that's done, run
+```bash
+docker run -p 4200:80 immunization-dashboard
+```
+
+Open your browser and navigate to `http://localhost:4200/`.
 
 ## Additional Resources
 

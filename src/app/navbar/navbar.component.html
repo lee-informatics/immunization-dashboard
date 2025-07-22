@@ -1,0 +1,25 @@
+<nav class="navbar">
+  <div class="navbar-left">
+    <a class="navbar-title clickable" [routerLink]="['/']">Immunization Dashboard</a>
+    <a class="navbar-link clickable" [routerLink]="['/']" routerLinkActive="active">Browser</a>
+    <!-- <a class="navbar-link clickable" [routerLink]="['/builder']" routerLinkActive="active">Builder</a> -->
+  </div>
+  <div class="navbar-right">
+    <span class="navbar-link clickable" (click)="toggleHelpText()">
+      Show Help Text
+      <span *ngIf="helpTextEnabled" class="help-on">(On)</span>
+      <span *ngIf="!helpTextEnabled" class="help-off">(Off)</span>
+    </span>
+    <div class="navbar-link dropdown">
+      Documentation
+      <div class="dropdown-content">
+        <a href="https://hl7.org/fhir/" target="_blank">FHIR Spec</a>
+        <a href="https://confluence.hl7.org/spaces/PH/pages/204276822/Bulk+Data" target="_blank">HL7 Helios Bulk Data for Public Health</a>
+        <a href="https://www.github.com/lee-informatics/immunization-dashboard" target="_blank">GitHub</a>
+      </div>
+    </div>
+    <a class="navbar-link clickable" [routerLink]="['/settings']" routerLinkActive="active">Settings</a>
+    <a class="navbar-link clickable" href="https://www.github.com/lee-informatics/immunization-dashboard/issues" target="_blank">Leave Feedback</a>
+    <button *ngIf="developerMode" class="navbar-link clickable" (click)="clearCache()" style="background:none;border:none;padding:0;margin-left:1rem;color:inherit;">Clear Cache</button>
+  </div>
+</nav>

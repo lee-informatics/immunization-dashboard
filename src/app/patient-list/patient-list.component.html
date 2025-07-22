@@ -1,0 +1,71 @@
+<div class="patient-list-container">
+  <div class="top-bar">
+    <h2>Patient List</h2>
+    <div class="update-btns-col">
+      <div class="update-btn-row">
+        <div style="display:flex;flex-direction:column;align-items:flex-end;">
+          <div *ngIf="lastExportDate" class="last-export">Last export: {{ lastExportDate }}</div>
+          <button class="update-btn" (click)="updateImmunization()" [disabled]="isSyncing">
+            <ng-container *ngIf="isSyncing">
+              <span class="spinner spinner-inline"></span> Updating…
+            </ng-container>
+            <ng-container *ngIf="!isSyncing && isDone">
+              <span class="done-icon">✔️</span> Done
+            </ng-container>
+            <ng-container *ngIf="!isSyncing && !isDone">
+              Update Immunization from State IIS
+            </ng-container>
+          </button>
+        </div>
+        <!-- <button class="update-btn">Update from TEFCA QHIN</button> -->
+      </div>
+    </div>
+  </div>
+  <div *ngIf="showExportNotif" class="export-notif">Fetching done from State IIS</div>
+  <div class="filters">
+    <input
+      type="text"
+      [(ngModel)]="searchQuery"
+      (ngModelChange)="currentPage = 1"
+      placeholder="Search by Name"
+      [disabled]="isSyncing"
+    />
+    <select [(ngModel)]="genderFilter" (ngModelChange)="currentPage = 1" [disabled]="isSyncing">
+      <option value="">All Genders</option>
+      <option *ngFor="let g of genderOptions" [value]="g">{{ g | titlecase }}</option>
+    </select>
+    <select [(ngModel)]="birthPlaceFilter" (ngModelChange)="currentPage = 1" [disabled]="isSyncing">
+      <option value="">All Birthplaces</option>
+      <option *ngFor="let bp of birthPlaceOptions" [value]="bp">{{ bp }}</option>
+    </select>
+  </div>
+  <div *ngIf="loading">Loading patients...</div>
+  <div *ngIf="error" class="error">{{ error }}</div>
+  <div class="card-grid" *ngIf="!loading && !error && paginatedPatients.length > 0">
+    <div class="patient-card" *ngFor="let patient of paginatedPatients; let i = index" (click)="!isSyncing && goToPatient(patient.id)">
+      <div class="patient-card-top">
+        <div class="patient-card-header">
+          <div class="patient-name-marquee">
+            <span #nameSpan [ngClass]="{'marquee-enabled': nameOverflow[i]}">
+              {{ patient.name?.[0]?.text || (patient.name?.[0]?.given?.join(' ') + ' ' + patient.name?.[0]?.family) || 'Unnamed Patient' }}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="patient-card-body">
+        <div><strong>Gender:</strong> {{ patient.gender ? (patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1)) : 'Unknown' }}</div>        <div><strong>Birth Date:</strong> {{ patient.birthDate || 'Unknown' }}</div>
+        <div><strong>Birth Place:</strong> {{ getBirthPlace(patient) }}</div>
+        <div><strong>Phone:</strong> {{ getPhone(patient) }}</div>
+        <div><strong>Location:</strong> {{ patient.address?.[0]?.city || 'N/A' }}, {{ patient.address?.[0]?.state || 'N/A' }}</div>
+      </div>
+    </div>
+  </div>
+  <div *ngIf="!loading && !error && paginatedPatients.length === 0" class="no-patients-message">
+    No patient data found.
+  </div>
+  <div class="pagination" *ngIf="!loading && !error && totalPages > 1">
+    <button type="button" (click)="prevPage()" [disabled]="currentPage === 1 || isSyncing">&#x25C0;</button>
+    <span class="page-indicator">{{ currentPage }} of {{ totalPages }}</span>
+    <button type="button" (click)="nextPage()" [disabled]="currentPage === totalPages || isSyncing">&#x25B6;</button>
+  </div>
+</div> 

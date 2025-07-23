@@ -1,0 +1,125 @@
+<div class="patient-detail-container light-theme">
+  <button class="back-btn" (click)="goBack()">&larr; Back</button>
+  <div class="header-block">
+    <h1>Patient Details</h1>
+    <div class="subtitle">View and manage patient information</div>
+    <div class="patient-summary">
+      <div class="patient-main-info">
+        <div class="patient-name">{{ patient.name?.[0]?.text || (patient.name?.[0]?.given?.join(' ') + ' ' + patient.name?.[0]?.family) || 'Unnamed Patient' }}</div>
+        <div class="patient-meta">
+          ID: {{ patient.id }}
+          <span *ngIf="patient.birthDate"> | Birth Date: {{ patient.birthDate }}</span>
+          <span *ngIf="patient.gender"> | Gender: {{ patient.gender | titlecase }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loadingPatient" class="no-data">Loading patient data...</div>
+  <div *ngIf="!loadingPatient && !patient" class="no-data">Patient not found.</div>
+  <div *ngIf="patient">
+  <div class="section-block">
+    <div class="section-title">Demographics</div>
+    <div class="info-table">
+      <div class="info-row"><span>Birthplace</span><span>{{ getBirthPlace(patient) }}</span></div>
+      <div class="info-row"><span>Race</span><span>{{ getRace(patient) }}</span></div>
+      <div class="info-row"><span>Ethnicity</span><span>{{ getEthnicity(patient) }}</span></div>
+    </div>
+  </div>
+
+  <div class="section-block">
+    <div class="section-title">Contact Information</div>
+    <div class="info-table">
+      <div class="info-row"><span>Phone</span><span>{{ patient.telecom?.[0]?.value || 'N/A' }}</span></div>
+      <div class="info-row"><span>Address</span><span>{{ patient.address?.[0]?.line?.[0] }}, {{ patient.address?.[0]?.city }}, {{ patient.address?.[0]?.state }} {{ patient.address?.[0]?.postalCode }}</span></div>
+    </div>
+  </div>
+
+  <div class="section-block">
+    <div class="section-title">Language & Communication</div>
+    <div class="info-table">
+      <div class="info-row"><span>Preferred Language</span><span>{{ patient.communication?.[0]?.language?.text || 'N/A' }}</span></div>
+    </div>
+  </div>
+
+  <div class="section-block missing-warning" *ngIf="getMissingRecommendedVaccines().length > 0">
+    <div class="section-title">Missing Recommended Vaccines (Age 5)</div>
+    <table class="missing-vax-table">
+      <thead>
+        <tr>
+          <th>Vaccine Name</th>
+          <th>Vaccine Code</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let vax of getMissingRecommendedVaccines()">
+          <td>{{ vax.display }}</td>
+          <td>{{ vax.code }}</td>
+          <td><button class="administer-btn">Administer</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="section-block" *ngIf="getMissingRecommendedVaccines().length === 0">
+    <div class="section-title">All recommended vaccines for age 5 are present.</div>
+  </div>
+
+  <div class="section-block">
+    <div class="section-title">Immunization Records</div>
+    <table *ngIf="immunizations.length > 0">
+      <thead>
+        <tr>
+          <th (click)="setImmunSort('occurrenceDateTime')">
+            Date
+            <span class="sort-arrows">
+              <span [class.active]="immunSort.key === 'occurrenceDateTime' && immunSort.dir === 'desc'">&#9660;</span>
+              <span [class.active]="immunSort.key === 'occurrenceDateTime' && immunSort.dir === 'asc'">&#9650;</span>
+            </span>
+          </th>
+          <th>Vaccine</th>
+          <th>Vaccine Code</th>
+          <th>Status</th>
+          <th>Location</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let imm of getSortedFilteredImmunizations()">
+          <td>{{ formatDate(imm.occurrenceDateTime) }}</td>
+          <td>{{ imm.vaccineCode?.text || imm.vaccineCode?.coding?.[0]?.display }}</td>
+          <td>{{ imm.vaccineCode?.coding?.[0]?.code || 'N/A' }}</td>
+          <td>{{ imm.status | titlecase }}</td>
+          <td>{{ imm.location?.display }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div *ngIf="immunizations.length === 0" class="no-data">No immunization records found.</div>
+  </div>
+
+  <div class="section-block">
+    <div class="section-title">Conditions</div>
+    <table *ngIf="conditions.length > 0">
+      <thead>
+        <tr>
+          <th (click)="setCondSort('onsetDateTime')">
+            Date
+            <span class="sort-arrows">
+              <span [class.active]="condSort.key === 'onsetDateTime' && condSort.dir === 'desc'">&#9660;</span>
+              <span [class.active]="condSort.key === 'onsetDateTime' && condSort.dir === 'asc'">&#9650;</span>
+            </span>
+          </th>
+          <th>Condition</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let cond of getSortedFilteredConditions()">
+          <td>{{ formatDate(cond.onsetDateTime) }}</td>
+          <td>{{ cond.code?.text || cond.code?.coding?.[0]?.display }}</td>
+          <td>{{ cond.clinicalStatus?.coding?.[0]?.code | titlecase }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div *ngIf="conditions.length === 0" class="no-data">No condition records found.</div>
+  </div>
+</div> 

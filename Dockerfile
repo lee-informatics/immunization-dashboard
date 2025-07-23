@@ -20,6 +20,7 @@ WORKDIR /usr/share/nginx/html
 
 # Remove any default nginx content
 RUN rm -rf *
+ENV IMMUNIZATION_DEFAULT_FHIR_URL=http://localhost:8080/fhir
 
 # Copy build from "builder" stage, as well as runtime configuration script public folder
 COPY --from=builder /app/dist/immunization-dashboard/browser .
@@ -27,4 +28,3 @@ COPY --from=builder /app/dist/immunization-dashboard/browser .
 # CMD ["./configure-from-environment.sh", "&&", "exec", "nginx", "-g", "'daemon off;'"]
 # CMD envsubst < public/configuration.template.js > public/configuration.js  && exec nginx -g 'daemon off;'
 CMD ["sh", "-c", "envsubst < configuration.template.js > configuration.js && exec nginx -g 'daemon off;'"]
-

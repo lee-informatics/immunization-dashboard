@@ -1,8 +1,9 @@
-import { Component, OnInit, QueryList, ViewChildren, ElementRef } from '@angular/core';
+import { Component, OnInit, QueryList, ViewChildren, ElementRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PatientService } from './patient.service';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-patient-list',
@@ -11,7 +12,7 @@ import { Router } from '@angular/router';
   standalone: true,
   imports: [CommonModule, FormsModule]
 })
-export class PatientListComponent implements OnInit {
+export class PatientListComponent implements OnInit, OnDestroy {
   patients: any[] = [];
   loading = true;
   error: string | null = null;
@@ -29,16 +30,25 @@ export class PatientListComponent implements OnInit {
   raceFilter: string = '';
   birthPlaceFilter: string = '';
 
+  // Immunization state - now managed by service
   isSyncing: boolean = false;
   isDone: boolean = false;
   showExportNotif: boolean = false;
   lastExportDate: string | null = null;
+
+  // Allergy state
+  isSyncingAllergies: boolean = false;
+  isAllergyDone: boolean = false;
+  showAllergyExportNotif: boolean = false;
+  lastAllergyExportDate: string | null = null;
 
   @ViewChildren('nameSpan') nameSpans!: QueryList<ElementRef>;
   nameOverflow: boolean[] = [];
 
   private CACHE_KEY = 'immunization_condition_binary_ids';
   private GROUPED_CACHE_KEY = 'grouped_patient_data';
+
+  private subscriptions: Subscription[] = [];
 
   constructor(private patientService: PatientService, private router: Router) {}
 
@@ -54,7 +64,15 @@ export class PatientListComponent implements OnInit {
         this.loading = false;
       }
     });
-    this.lastExportDate = localStorage.getItem('lastExportDate');
+    
+    // Subscribe to service state for immunization processing
+    const immunizationSub = this.patientService.isSyncing$.subscribe(isSyncing => this.isSyncing = isSyncing);
+    const immunizationDoneSub = this.patientService.isDone$.subscribe(isDone => this.isDone = isDone);
+    const immunizationNotifSub = this.patientService.showExportNotif$.subscribe(showNotif => this.showExportNotif = showNotif);
+    const immunizationDateSub = this.patientService.lastExportDate$.subscribe(date => this.lastExportDate = date);
+    this.subscriptions.push(immunizationSub, immunizationDoneSub, immunizationNotifSub, immunizationDateSub);
+    
+    this.lastAllergyExportDate = localStorage.getItem('lastAllergyExportDate');
   }
 
   ngAfterViewInit() {
@@ -89,94 +107,105 @@ export class PatientListComponent implements OnInit {
 
   updateImmunization() {
     if (this.isSyncing) return;
-    this.isDone = false;
+    
     const cached = this.getCachedBinaryIds();
     if (cached && (cached.Immunization.length > 0 || cached.Condition.length > 0)) {
       const useCache = window.confirm('Use cached Immunization/Condition data?');
       if (useCache) {
-        this.isDone = true;
-        this.showExportNotif = true;
-        setTimeout(() => { this.showExportNotif = false; }, 3000);
-        this.lastExportDate = new Date().toLocaleString();
-        localStorage.setItem('lastExportDate', this.lastExportDate);
-        setTimeout(() => { this.isDone = false; }, 2500);
+        // Use cached data - trigger notification through service
+        this.patientService.showNotification();
+        this.patientService.updateLastExportDate();
         return;
       }
     }
-    this.isSyncing = true;
-    this.patientService.startExportJob().subscribe({
-      next: (pollUrl) => {
-        this.patientService.pollExportStatus(pollUrl).subscribe({
-          next: (result) => {
-            this.isSyncing = false;
-            this.isDone = true;
-            this.showExportNotif = true;
-            setTimeout(() => { this.showExportNotif = false; }, 3000);
-            this.lastExportDate = new Date().toLocaleString();
-            localStorage.setItem('lastExportDate', this.lastExportDate);
-            // Extract and cache Immunization/Condition Binary IDs
-            const output = Array.isArray(result?.output) ? result.output : [];
-            const ids: { Immunization: string[]; Condition: string[] } = { Immunization: [], Condition: [] };
-            for (const entry of output) {
-              if ((entry.type === 'Immunization' || entry.type === 'Condition') && entry.url) {
-                const match = entry.url.match(/\/Binary\/([^/]+)/);
-                if (match) {
-                  ids[entry.type as 'Immunization' | 'Condition'].push(match[1]);
-                }
-              }
-            }
-            this.setCachedBinaryIds(ids);
-            this.groupAndCachePatientData(ids.Immunization, ids.Condition);
-            setTimeout(() => { this.isDone = false; }, 2500);
-          },
-          error: (err) => {
-            this.isSyncing = false;
-            this.isDone = false;
-            alert('Export failed: ' + (err?.message || err));
-          }
-        });
-      },
-      error: (err) => {
-        this.isSyncing = false;
-        this.isDone = false;
-        alert('Export failed: ' + (err?.message || err));
-      }
-    });
+    
+    // Start background processing that will continue even if component is destroyed
+    this.patientService.startBackgroundImmunizationExport();
   }
 
-  groupAndCachePatientData(immunizationIds: string[], conditionIds: string[]) {
-    const grouped: { [patientId: string]: { patient_id: string, conditions: any[], immunizations: any[] } } = {};
-    let totalToFetch = immunizationIds.length + conditionIds.length;
-    let fetched = 0;
-    const finish = () => {
-      if (++fetched === totalToFetch) {
-        localStorage.setItem(this.GROUPED_CACHE_KEY, JSON.stringify(grouped));
+  async updateAllAllergies() {
+    if (this.isSyncingAllergies) return;
+    this.isSyncingAllergies = true;
+    this.isAllergyDone = false;
+    try {
+      // Fetch all allergies at once (no patient query param)
+      const tefcaQHINUrl = (window as any)["TEFCA_QHIN_DEFAULT_FHIR_URL"] || '';
+
+      (window as any)["IMMUNIZATION_DEFAULT_FHIR_URL"] || '';
+      const res = await fetch(tefcaQHINUrl + '/AllergyIntolerance', {
+        headers: { 'Accept': 'application/fhir+json' }
+      });
+      if (!res.ok) throw new Error('Failed to fetch allergy info');
+      const data = await res.json();
+      const allAllergies = Array.isArray(data.entry) ? data.entry.map((e: any) => e.resource) : [];
+      // Group allergies by patient ID
+      const allergiesByPatient: { [id: string]: any[] } = {};
+      for (const allergy of allAllergies) {
+        const patientRef = allergy.patient?.reference;
+        if (patientRef && patientRef.startsWith('Patient/')) {
+          const pid = patientRef.split('/')[1];
+          if (!allergiesByPatient[pid]) allergiesByPatient[pid] = [];
+          allergiesByPatient[pid].push(allergy);
+        }
       }
-    };
-    // Immunizations
-    for (const id of immunizationIds) {
-      this.patientService.fetchAndDecodeBinary(id).subscribe(records => {
-        for (const rec of records) {
-          const ref = rec.patient?.reference || '';
-          const patientId = ref.replace('Patient/', '');
-          if (!grouped[patientId]) grouped[patientId] = { patient_id: patientId, conditions: [], immunizations: [] };
-          grouped[patientId].immunizations.push(rec);
+      // Update grouped_patient_data in localStorage
+      const groupedRaw = localStorage.getItem(this.GROUPED_CACHE_KEY);
+      let grouped: { [patientId: string]: { patient_id: string, conditions: any[], immunizations: any[], allergies?: any[] } } = {};
+      if (groupedRaw) {
+        try {
+          grouped = JSON.parse(groupedRaw);
+        } catch {}
+      }
+      for (const patient of this.patients) {
+        if (!patient.id) continue;
+        if (!grouped[patient.id]) {
+          grouped[patient.id] = {
+            patient_id: patient.id,
+            conditions: [],
+            immunizations: [],
+            allergies: []
+          };
         }
-        finish();
-      });
-    }
-    // Conditions
-    for (const id of conditionIds) {
-      this.patientService.fetchAndDecodeBinary(id).subscribe(records => {
-        for (const rec of records) {
-          const ref = rec.subject?.reference || '';
-          const patientId = ref.replace('Patient/', '');
-          if (!grouped[patientId]) grouped[patientId] = { patient_id: patientId, conditions: [], immunizations: [] };
-          grouped[patientId].conditions.push(rec);
+        grouped[patient.id].allergies = allergiesByPatient[patient.id] || [];
+      }
+      localStorage.setItem(this.GROUPED_CACHE_KEY, JSON.stringify(grouped));
+      this.lastAllergyExportDate = new Date().toLocaleString();
+      localStorage.setItem('lastAllergyExportDate', this.lastAllergyExportDate);
+      // Show notification for successful allergy records update
+      this.showAllergyExportNotif = true;
+      setTimeout(() => { this.showAllergyExportNotif = false; }, 3000);
+    } catch (err) {
+      // On error, still update grouped_patient_data with empty allergies
+      const groupedRaw = localStorage.getItem(this.GROUPED_CACHE_KEY);
+      let grouped: { [patientId: string]: { patient_id: string, conditions: any[], immunizations: any[], allergies?: any[] } } = {};
+      if (groupedRaw) {
+        try {
+          grouped = JSON.parse(groupedRaw);
+        } catch {}
+      }
+      for (const patient of this.patients) {
+        if (!patient.id) continue;
+        if (!grouped[patient.id]) {
+          grouped[patient.id] = {
+            patient_id: patient.id,
+            conditions: [],
+            immunizations: [],
+            allergies: []
+          };
         }
-        finish();
-      });
+        grouped[patient.id].allergies = [];
+      }
+      localStorage.setItem(this.GROUPED_CACHE_KEY, JSON.stringify(grouped));
+      this.lastAllergyExportDate = new Date().toLocaleString();
+      localStorage.setItem('lastAllergyExportDate', this.lastAllergyExportDate);
     }
+    this.isSyncingAllergies = false;
+    this.isAllergyDone = true;
+    setTimeout(() => { this.isAllergyDone = false; }, 3000);
+  }
+
+  ngOnDestroy() {
+    this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
   get filteredPatients(): any[] {

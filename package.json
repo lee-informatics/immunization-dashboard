@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "IMMUNIZATION_DEFAULT_FHIR_URL=http://localhost:8080/fhir envsubst < public/configuration.template.js > public/configuration.js && ng serve",
+    "start": "TEFCA_QHIN_DEFAULT_FHIR_URL=http://localhost:8080/fhir IMMUNIZATION_DEFAULT_FHIR_URL=http://localhost:8080/fhir envsubst < public/configuration.template.js > public/configuration.js && ng serve",
     "build": "ng build",
-    "watch": "IMMUNIZATION_DEFAULT_FHIR_URL=http://localhost:8080/fhir envsubst < public/configuration.template.js > public/configuration.js && ng build --watch --configuration development",
+    "watch": "TEFCA_QHIN_DEFAULT_FHIR_URL=http://localhost:8080/fhir IMMUNIZATION_DEFAULT_FHIR_URL=http://localhost:8080/fhir envsubst < public/configuration.template.js > public/configuration.js && ng build --watch --configuration development",
     "test": "ng test"
   },
   "prettier": {

@@ -22,6 +22,7 @@ WORKDIR /usr/share/nginx/html
 RUN rm -rf *
 
 # Copy build from "builder" stage, as well as runtime configuration script public folder
+
 COPY --from=builder /app/dist/immunization-dashboard .
 # Copy runtime template
 COPY public/configuration.template.js ./configuration.template.js
@@ -31,4 +32,3 @@ COPY public/favicon.ico ./favicon.ico
 ENV IMMUNIZATION_DEFAULT_FHIR_URL=http://localhost:8080/fhir
 
 CMD envsubst < configuration.template.js > configuration.js && cp configuration.js browser/configuration.js && exec nginx -g 'daemon off;'
-

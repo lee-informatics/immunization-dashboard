@@ -4,11 +4,12 @@
     <h1>Patient Details</h1>
     <div class="subtitle">View and manage patient information</div>
     <div class="patient-summary">
-      <div class="patient-main-info">
+      <div class="patient-main-info" *ngIf="patient">
         <div class="patient-name">{{ patient.name?.[0]?.text || (patient.name?.[0]?.given?.join(' ') + ' ' + patient.name?.[0]?.family) || 'Unnamed Patient' }}</div>
         <div class="patient-meta">
           ID: {{ patient.id }}
           <span *ngIf="patient.birthDate"> | Birth Date: {{ patient.birthDate }}</span>
+          <span *ngIf="getPatientAge() !== null"> | Age: {{ getPatientAge() }}</span>
           <span *ngIf="patient.gender"> | Gender: {{ patient.gender | titlecase }}</span>
         </div>
       </div>
@@ -62,7 +63,7 @@
     </table>
   </div>
   <div class="section-block" *ngIf="getMissingRecommendedVaccines().length === 0">
-    <div class="section-title">All recommended vaccines for age 5 are present.</div>
+    <div class="section-title">All recommended vaccines for age {{ getPatientAge() }} are present.</div>
   </div>
 
   <div class="section-block">
@@ -93,7 +94,7 @@
         </tr>
       </tbody>
     </table>
-    <div *ngIf="immunizations.length === 0" class="no-data">No immunization records found.</div>
+    <div *ngIf="immunizations.length === 0" class="no-patients-message">No immunization records found.</div>
   </div>
 
   <div class="section-block">
@@ -120,6 +121,60 @@
         </tr>
       </tbody>
     </table>
-    <div *ngIf="conditions.length === 0" class="no-data">No condition records found.</div>
+    <div *ngIf="conditions.length === 0" class="no-patients-message">No condition records found.</div>
+  </div>
+
+  <div class="section-block">
+    <div class="section-title">Allergy information</div>
+    <!-- <button (click)="fetchAllergies()" [disabled]="loadingAllergies" class="allergy-btn">Update Allergy Information from TEFCA QHIN</button> -->
+    <div *ngIf="loadingAllergies" class="no-data">Loading allergy information...</div>
+    <div *ngIf="allergyError" class="no-data" style="color: #b23b3b;">Error: {{ allergyError }}</div>
+    <table *ngIf="allergiesDisplayState === 'show'" class="styled-table">
+      <thead>
+        <tr>
+          <th>Substance</th>
+          <th>Status</th>
+          <th>Verification</th>
+          <th>Reaction</th>
+          <th>Severity</th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngFor="let allergy of allergies">
+          <ng-container *ngIf="allergy.reaction && allergy.reaction.length; else noReactionsRow">
+            <tr *ngFor="let reaction of allergy.reaction; let i = index" [class.striped-row]="i % 2 === 1">
+              <td *ngIf="i === 0" [attr.rowspan]="allergy.reaction.length">
+                {{ (allergy.code?.coding?.[0]?.display || allergy.code?.text || 'N/A').split('(')[0].trim() | titlecase }}
+              </td>
+              <td *ngIf="i === 0" [attr.rowspan]="allergy.reaction.length">
+                {{ allergy.clinicalStatus?.coding?.[0]?.code ? (allergy.clinicalStatus.coding[0].code | titlecase) : 'N/A' }}
+              </td>
+              <td *ngIf="i === 0" [attr.rowspan]="allergy.reaction.length">
+                {{ allergy.verificationStatus?.coding?.[0]?.code ? (allergy.verificationStatus.coding[0].code | titlecase) : 'N/A' }}
+              </td>
+              <td>
+                <span *ngIf="reaction.manifestation && reaction.manifestation.length">
+                  <span *ngFor="let m of reaction.manifestation; let last = last">
+                    {{ ((m.text || m.coding?.[0]?.display) ? (m.text || m.coding[0].display) : 'N/A').split('(')[0].trim() | titlecase }}<span *ngIf="!last">, </span>
+                  </span>
+                </span>
+                <span *ngIf="!reaction.manifestation || !reaction.manifestation.length">N/A</span>
+              </td>
+              <td>{{ reaction.severity ? (reaction.severity | titlecase) : 'N/A' }}</td>
+            </tr>
+          </ng-container>
+          <ng-template #noReactionsRow>
+            <tr>
+              <td>{{ (allergy.code?.coding?.[0]?.display || allergy.code?.text || 'N/A').split('(')[0].trim() | titlecase }}</td>
+              <td>{{ allergy.clinicalStatus?.coding?.[0]?.code ? (allergy.clinicalStatus.coding[0].code | titlecase) : 'N/A' }}</td>
+              <td>{{ allergy.verificationStatus?.coding?.[0]?.code ? (allergy.verificationStatus.coding[0].code | titlecase) : 'N/A' }}</td>
+              <td>N/A</td>
+              <td>N/A</td>
+            </tr>
+          </ng-template>
+        </ng-container>
+      </tbody>
+    </table>
+    <div *ngIf="allergiesDisplayState === 'not_found'" class="no-patients-message">No allergy information found.</div>
   </div>
 </div> 

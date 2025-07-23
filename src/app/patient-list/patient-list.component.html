@@ -2,47 +2,45 @@
   <div class="top-bar">
     <h2>Patient List</h2>
     <div class="update-btns-col">
-      <div class="update-btn-row">
-        <div style="display:flex;flex-direction:column;align-items:flex-end;">
-          <div *ngIf="lastExportDate" class="last-export">Last export: {{ lastExportDate }}</div>
-          <button class="update-btn" (click)="updateImmunization()" [disabled]="isSyncing">
-            <ng-container *ngIf="isSyncing">
-              <span class="spinner spinner-inline"></span> Updating…
-            </ng-container>
-            <ng-container *ngIf="!isSyncing && isDone">
-              <span class="done-icon">✔️</span> Done
-            </ng-container>
-            <ng-container *ngIf="!isSyncing && !isDone">
-              Update Immunization from State IIS
-            </ng-container>
-          </button>
-        </div>
-        <!-- <button class="update-btn">Update from TEFCA QHIN</button> -->
+      <div class="button-row-vertical">
       </div>
+      <!-- <button class="update-btn">Update from TEFCA QHIN</button> -->
     </div>
   </div>
-  <div *ngIf="showExportNotif" class="export-notif">Fetching done from State IIS</div>
+  <div *ngIf="showExportNotif" class="export-notif">Immunization records updated</div>
+  <div *ngIf="showAllergyExportNotif" class="export-notif">Allergy records updated</div>
   <div class="filters">
     <input
       type="text"
       [(ngModel)]="searchQuery"
       (ngModelChange)="currentPage = 1"
       placeholder="Search by Name"
-      [disabled]="isSyncing"
     />
-    <select [(ngModel)]="genderFilter" (ngModelChange)="currentPage = 1" [disabled]="isSyncing">
+    <select [(ngModel)]="genderFilter" (ngModelChange)="currentPage = 1">
       <option value="">All Genders</option>
       <option *ngFor="let g of genderOptions" [value]="g">{{ g | titlecase }}</option>
     </select>
-    <select [(ngModel)]="birthPlaceFilter" (ngModelChange)="currentPage = 1" [disabled]="isSyncing">
+    <select [(ngModel)]="birthPlaceFilter" (ngModelChange)="currentPage = 1">
       <option value="">All Birthplaces</option>
       <option *ngFor="let bp of birthPlaceOptions" [value]="bp">{{ bp }}</option>
     </select>
+    <div class="flex-spacer"></div>
+    <div class="update-btns-col">
+      <button class="update-btn" (click)="updateImmunization()" [disabled]="isSyncing">
+        <span *ngIf="isSyncing" class="spinner-inline"></span>
+        Get Immunization Records (State IIS)
+      </button>
+      <button class="update-btn" (click)="updateAllAllergies()" [disabled]="isSyncingAllergies">
+        <span *ngIf="isSyncingAllergies" class="spinner-inline"></span>
+        Get Allergy Records (TEFCA QHIN)
+      </button>
+    </div>
+
   </div>
   <div *ngIf="loading">Loading patients...</div>
   <div *ngIf="error" class="error">{{ error }}</div>
   <div class="card-grid" *ngIf="!loading && !error && paginatedPatients.length > 0">
-    <div class="patient-card" *ngFor="let patient of paginatedPatients; let i = index" (click)="!isSyncing && goToPatient(patient.id)">
+    <div class="patient-card" *ngFor="let patient of paginatedPatients; let i = index" (click)="goToPatient(patient.id)">
       <div class="patient-card-top">
         <div class="patient-card-header">
           <div class="patient-name-marquee">
@@ -64,8 +62,8 @@
     No patient data found.
   </div>
   <div class="pagination" *ngIf="!loading && !error && totalPages > 1">
-    <button type="button" (click)="prevPage()" [disabled]="currentPage === 1 || isSyncing">&#x25C0;</button>
+    <button type="button" (click)="prevPage()" [disabled]="currentPage === 1">&#x25C0;</button>
     <span class="page-indicator">{{ currentPage }} of {{ totalPages }}</span>
-    <button type="button" (click)="nextPage()" [disabled]="currentPage === totalPages || isSyncing">&#x25B6;</button>
+    <button type="button" (click)="nextPage()" [disabled]="currentPage === totalPages">&#x25B6;</button>
   </div>
 </div> 

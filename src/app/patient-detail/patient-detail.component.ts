@@ -18,6 +18,12 @@ export class PatientDetailComponent implements OnInit {
   immunizations: any[] = [];
   conditions: any[] = [];
   loadingPatient: boolean = false;
+  allergies: any[] = [];
+  loadingAllergies: boolean = false;
+  allergyError: string | null = null;
+  allergyButtonPressed: boolean = false;
+  allergiesKeyExists: boolean = false;
+  allergiesDisplayState: 'none' | 'not_found' | 'show' = 'none';
 
   // Sorting/filtering state
   immunSort: { key: string, dir: 'asc' | 'desc' } = { key: 'occurrenceDateTime', dir: 'desc' };
@@ -53,6 +59,38 @@ export class PatientDetailComponent implements OnInit {
         this.immunizations = entry.immunizations || [];
         this.conditions = entry.conditions || [];
       }
+    }
+    this.loadAllergiesFromCache();
+  }
+
+  loadAllergiesFromCache() {
+    const groupedRaw = localStorage.getItem('grouped_patient_data');
+    let allergies: any[] | undefined = undefined;
+    this.allergiesDisplayState = 'none';
+    if (groupedRaw) {
+      try {
+        const grouped = JSON.parse(groupedRaw);
+        const entry = grouped[String(this.patientId)];
+        if (entry && entry.hasOwnProperty('allergies')) {
+          allergies = entry.allergies;
+          if (Array.isArray(allergies) && allergies.length > 0) {
+            this.allergiesDisplayState = 'show';
+          } else {
+            this.allergiesDisplayState = 'not_found';
+          }
+        } else {
+          this.allergiesDisplayState = 'none';
+        }
+      } catch {
+        this.allergiesDisplayState = 'none';
+      }
+    } else {
+      this.allergiesDisplayState = 'none';
+    }
+    if (allergies !== undefined) {
+      this.allergies = Array.isArray(allergies) ? allergies : [];
+    } else {
+      this.allergies = [];
     }
   }
 
@@ -185,5 +223,74 @@ export class PatientDetailComponent implements OnInit {
       this.immunizations.map(imm => imm.vaccineCode?.coding?.[0]?.code).filter(Boolean)
     );
     return recommended.filter(vax => !receivedCodes.has(vax.code));
+  }
+
+  /**
+   * Returns the patient's age in years, or null if birthDate is missing/invalid.
+   */
+  getPatientAge(): number | null {
+    if (!this.patient || !this.patient.birthDate) return null;
+    const birthDate = new Date(this.patient.birthDate);
+    if (isNaN(birthDate.getTime())) return null;
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  }
+
+  /**
+   * Fetch allergy information for the patient from TEFCA QHIN API
+   */
+  fetchAllergies() {
+    console.log('fetchAllergies called');
+    if (!this.patient?.id) {
+      console.log('No patient or patient.id:', this.patient);
+      return;
+    }
+    console.log('fetchAllergies for patientId:', this.patient.id, 'patient object:', this.patient);
+    this.allergyButtonPressed = true;
+    this.loadingAllergies = true;
+    this.allergyError = null;
+    setTimeout(() => {
+      const groupedRaw = localStorage.getItem('grouped_patient_data');
+      let allergies: any[] | undefined = undefined;
+      this.allergiesDisplayState = 'none';
+      if (groupedRaw) {
+        try {
+          const grouped = JSON.parse(groupedRaw);
+          console.log('Grouped cache keys:', Object.keys(grouped));
+          const entry = grouped[String(this.patient.id)];
+          console.log('Looking for patient.id:', this.patient.id, 'Found entry:', entry);
+          if (entry && entry.hasOwnProperty('allergies')) {
+            allergies = entry.allergies;
+            if (Array.isArray(allergies) && allergies.length > 0) {
+              this.allergiesDisplayState = 'show';
+            } else {
+              this.allergiesDisplayState = 'not_found';
+            }
+            console.log('Allergies found:', allergies);
+          } else {
+            this.allergiesDisplayState = 'none';
+            console.log('No allergies key in entry for patient:', this.patient.id);
+          }
+        } catch (e) {
+          this.allergiesDisplayState = 'none';
+          console.error('Error parsing grouped_patient_data', e);
+        }
+      } else {
+        this.allergiesDisplayState = 'none';
+        console.log('No grouped_patient_data found in localStorage');
+      }
+      if (allergies !== undefined) {
+        this.allergies = Array.isArray(allergies) ? allergies : [];
+        this.loadingAllergies = false;
+      } else {
+        this.allergies = [];
+        this.loadingAllergies = false;
+      }
+    }, 0);
   }
 }

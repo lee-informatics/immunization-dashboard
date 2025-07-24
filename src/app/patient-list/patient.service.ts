@@ -53,20 +53,19 @@ export class PatientService {
       'Accept': 'application/fhir+json',
       'Prefer': 'respond-async'
     });
-    // typesToExport can be passed as query param if needed
     return this.http.get<any>(`${BACKEND_URL}/api/patient-export`, { headers, observe: 'response' }).pipe(
       map(res => {
-        const pollUrl = res.body?.pollUrl;
-        if (!pollUrl) throw new Error('No Content-Location returned.');
-        return pollUrl;
+        const jobId = res.body?.jobId;
+        if (!jobId) throw new Error('No jobId returned from backend.');
+        return jobId;
       })
     );
   }
 
   // 3. Poll export status via backend
-  pollExportStatus(pollUrl: string): Observable<any> {
+  pollExportStatus(jobId: string): Observable<any> {
     return timer(0, 10000).pipe(
-      switchMap(() => this.http.get(`${BACKEND_URL}/api/patient-export/poll`, { params: { pollUrl }, observe: 'response' })),
+      switchMap(() => this.http.get(`${BACKEND_URL}/api/patient-export/status`, { params: { jobId }, observe: 'response' })),
       map(res => {
         if (res.status === 202) {
           // Still processing, keep polling
@@ -105,14 +104,27 @@ export class PatientService {
     );
   }
 
+
+  getAllergiesByPatient(patientId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${BACKEND_URL}/api/allergies/${patientId}`);
+  }
+
+  getAllergiesExport(): Observable<any[]> {
+    return this.http.get<any[]>(`${BACKEND_URL}/api/allergies`);
+  }
+
+  getImmunizationAndConditionsByPatient(patientId: string): Observable<any> {
+    return this.http.get<any>(`${BACKEND_URL}/api/bulk-export/patient/${patientId}`);
+  }
+
   // Background processing method that persists across component destruction
   startBackgroundImmunizationExport(): void {
     if (this.isSyncing) return;
     this._isDone.next(false);
     this._isSyncing.next(true);
     this.startExportJob().subscribe({
-      next: (pollUrl) => {
-        this.pollExportStatus(pollUrl).subscribe({
+      next: (jobId) => {
+        this.pollExportStatus(jobId).subscribe({
           next: (result) => {
             this._isSyncing.next(false);
             this._isDone.next(true);

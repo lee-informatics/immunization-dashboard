@@ -128,70 +128,15 @@ export class PatientListComponent implements OnInit, OnDestroy {
     this.isSyncingAllergies = true;
     this.isAllergyDone = false;
     try {
-      // Fetch all allergies from backend (which caches the response)
-      const res = await fetch('http://localhost:3001/api/allergies');
-      if (!res.ok) throw new Error('Failed to fetch allergy info');
-      const allAllergies = await res.json();
-      // Group allergies by patient ID
-      const allergiesByPatient: { [id: string]: any[] } = {};
-      for (const allergy of allAllergies) {
-        const patientRef = allergy.patient?.reference;
-        if (patientRef && patientRef.startsWith('Patient/')) {
-          const pid = patientRef.split('/')[1];
-          if (!allergiesByPatient[pid]) allergiesByPatient[pid] = [];
-          allergiesByPatient[pid].push(allergy);
-        }
-      }
-      // Update grouped_patient_data in localStorage
-      const groupedRaw = localStorage.getItem(this.GROUPED_CACHE_KEY);
-      let grouped: { [patientId: string]: { patient_id: string, conditions: any[], immunizations: any[], allergies?: any[] } } = {};
-      if (groupedRaw) {
-        try {
-          grouped = JSON.parse(groupedRaw);
-        } catch {}
-      }
-      for (const patient of this.patients) {
-        if (!patient.id) continue;
-        if (!grouped[patient.id]) {
-          grouped[patient.id] = {
-            patient_id: patient.id,
-            conditions: [],
-            immunizations: [],
-            allergies: []
-          };
-        }
-        grouped[patient.id].allergies = allergiesByPatient[patient.id] || [];
-      }
-      localStorage.setItem(this.GROUPED_CACHE_KEY, JSON.stringify(grouped));
+      // Fetch all allergies using the export API
+      const allergies = await this.patientService.getAllergiesExport().toPromise();
+      // Optionally, do something with the allergies data here (e.g., display, process, etc.)
       this.lastAllergyExportDate = new Date().toLocaleString();
       localStorage.setItem('lastAllergyExportDate', this.lastAllergyExportDate);
-      // Show notification for successful allergy records update
       this.showAllergyExportNotif = true;
       setTimeout(() => { this.showAllergyExportNotif = false; }, 3000);
     } catch (err) {
-      // On error, still update grouped_patient_data with empty allergies
-      const groupedRaw = localStorage.getItem(this.GROUPED_CACHE_KEY);
-      let grouped: { [patientId: string]: { patient_id: string, conditions: any[], immunizations: any[], allergies?: any[] } } = {};
-      if (groupedRaw) {
-        try {
-          grouped = JSON.parse(groupedRaw);
-        } catch {}
-      }
-      for (const patient of this.patients) {
-        if (!patient.id) continue;
-        if (!grouped[patient.id]) {
-          grouped[patient.id] = {
-            patient_id: patient.id,
-            conditions: [],
-            immunizations: [],
-            allergies: []
-          };
-        }
-        grouped[patient.id].allergies = [];
-      }
-      localStorage.setItem(this.GROUPED_CACHE_KEY, JSON.stringify(grouped));
-      this.lastAllergyExportDate = new Date().toLocaleString();
-      localStorage.setItem('lastAllergyExportDate', this.lastAllergyExportDate);
+      // Optionally, handle error (e.g., show error notification)
     }
     this.isSyncingAllergies = false;
     this.isAllergyDone = true;

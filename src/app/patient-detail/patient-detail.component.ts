@@ -44,23 +44,35 @@ export class PatientDetailComponent implements OnInit {
         next: (data: any[]) => {
           this.patient = data.find((p: any) => p.id === this.patientId);
           this.loadingPatient = false;
+          if (this.patient) {
+            this.fetchImmunizationAndConditions();
+            this.fetchAllergies();
+          }
         },
         error: () => {
           this.loadingPatient = false;
         }
       });
+    } else {
+      this.fetchImmunizationAndConditions();
+      this.fetchAllergies();
     }
-    // Get grouped data from cache
-    const groupedRaw = localStorage.getItem('grouped_patient_data');
-    if (groupedRaw) {
-      const grouped = JSON.parse(groupedRaw);
-      const entry = grouped[this.patientId];
-      if (entry) {
-        this.immunizations = entry.immunizations || [];
-        this.conditions = entry.conditions || [];
+  }
+
+  fetchImmunizationAndConditions() {
+    this.loadingPatient = true;
+    this.patientService.getImmunizationAndConditionsByPatient(this.patientId).subscribe({
+      next: (data: any) => {
+        this.immunizations = Array.isArray(data.Immunization) ? data.Immunization : [];
+        this.conditions = Array.isArray(data.Condition) ? data.Condition : [];
+        this.loadingPatient = false;
+      },
+      error: (err) => {
+        this.immunizations = [];
+        this.conditions = [];
+        this.loadingPatient = false;
       }
-    }
-    this.loadAllergiesFromCache();
+    });
   }
 
   loadAllergiesFromCache() {
@@ -246,55 +258,32 @@ export class PatientDetailComponent implements OnInit {
   }
 
   /**
-   * Fetch allergy information for the patient from TEFCA QHIN API
+   * Fetch allergy information for the patient from backend API
    */
   fetchAllergies() {
-    console.log('fetchAllergies called');
     if (!this.patient?.id) {
-      console.log('No patient or patient.id:', this.patient);
+      this.allergyError = 'No patient selected.';
       return;
     }
-    console.log('fetchAllergies for patientId:', this.patient.id, 'patient object:', this.patient);
     this.allergyButtonPressed = true;
     this.loadingAllergies = true;
     this.allergyError = null;
-    setTimeout(() => {
-      const groupedRaw = localStorage.getItem('grouped_patient_data');
-      let allergies: any[] | undefined = undefined;
-      this.allergiesDisplayState = 'none';
-      if (groupedRaw) {
-        try {
-          const grouped = JSON.parse(groupedRaw);
-          console.log('Grouped cache keys:', Object.keys(grouped));
-          const entry = grouped[String(this.patient.id)];
-          console.log('Looking for patient.id:', this.patient.id, 'Found entry:', entry);
-          if (entry && entry.hasOwnProperty('allergies')) {
-            allergies = entry.allergies;
-            if (Array.isArray(allergies) && allergies.length > 0) {
-              this.allergiesDisplayState = 'show';
-            } else {
-              this.allergiesDisplayState = 'not_found';
-            }
-            console.log('Allergies found:', allergies);
-          } else {
-            this.allergiesDisplayState = 'none';
-            console.log('No allergies key in entry for patient:', this.patient.id);
-          }
-        } catch (e) {
-          this.allergiesDisplayState = 'none';
-          console.error('Error parsing grouped_patient_data', e);
-        }
-      } else {
-        this.allergiesDisplayState = 'none';
-        console.log('No grouped_patient_data found in localStorage');
-      }
-      if (allergies !== undefined) {
+    this.patientService.getAllergiesByPatient(this.patient.id).subscribe({
+      next: (allergies: any[]) => {
         this.allergies = Array.isArray(allergies) ? allergies : [];
+        if (this.allergies.length > 0) {
+          this.allergiesDisplayState = 'show';
+        } else {
+          this.allergiesDisplayState = 'not_found';
+        }
         this.loadingAllergies = false;
-      } else {
+      },
+      error: (err) => {
         this.allergies = [];
+        this.allergiesDisplayState = 'none';
         this.loadingAllergies = false;
+        this.allergyError = err?.error?.error || err?.message || 'Failed to fetch allergy information.';
       }
-    }, 0);
+    });
   }
 }

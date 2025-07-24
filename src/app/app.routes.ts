@@ -3,6 +3,7 @@ import { BrowserComponent } from './browser-component/browser-component';
 import { SettingsComponent } from './settings/settings.component';
 import { PatientListComponent } from './patient-list/patient-list.component';
 import { PatientDetailComponent } from './patient-detail/patient-detail.component';
+import { AdministerComponent } from './administer/administer.component';
 
 export const routes: Routes = [
     {
@@ -10,5 +11,6 @@ export const routes: Routes = [
         component: PatientListComponent
     },
     { path: 'patient/:id', component: PatientDetailComponent },
+    { path: 'patient/:id/administer', component: AdministerComponent },
     { path: 'settings', component: SettingsComponent },
 ];

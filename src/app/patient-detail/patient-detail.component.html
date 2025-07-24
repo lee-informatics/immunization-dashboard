@@ -57,7 +57,7 @@
         <tr *ngFor="let vax of getMissingRecommendedVaccines()">
           <td>{{ vax.display }}</td>
           <td>{{ vax.code }}</td>
-          <td><button class="administer-btn">Administer</button></td>
+          <td><button class="administer-btn" (click)="navigateToAdminister()">Administer</button></td>
         </tr>
       </tbody>
     </table>

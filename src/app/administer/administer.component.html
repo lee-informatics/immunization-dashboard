@@ -1,0 +1,180 @@
+<div class="administer-container light-theme">
+  <button class="back-btn" (click)="goBack()">&larr; Back</button>
+  
+  <div class="header-block">
+    <h1>Administer Treatment</h1>
+    <div class="subtitle">Record immunization, medication, or treatment administration</div>
+    
+    <!-- Patient Details Section -->
+    <div class="patient-summary">
+      <div class="patient-main-info" *ngIf="patient">
+        <div class="patient-name">{{ patient.name?.[0]?.text || (patient.name?.[0]?.given?.join(' ') + ' ' + patient.name?.[0]?.family) || 'Unnamed Patient' }}</div>
+        <div class="patient-meta">
+          ID: {{ patient.id }}
+          <span *ngIf="patient.birthDate"> | Birth Date: {{ patient.birthDate }}</span>
+          <span *ngIf="getPatientAge() !== null"> | Age: {{ getPatientAge() }}</span>
+          <span *ngIf="patient.gender"> | Gender: {{ patient.gender | titlecase }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loadingPatient" class="no-data">Loading patient data...</div>
+  <div *ngIf="!loadingPatient && !patient" class="no-data">Patient not found.</div>
+  
+  <div *ngIf="patient" class="administer-form">
+    <form (ngSubmit)="onSubmit()">
+      <div class="form-section">
+        <h2>Administration Details</h2>
+        
+        <!-- Immunizations Table -->
+        <div class="table-section">
+          <h3>Select Immunizations</h3>
+          <div class="table-container">
+            <table class="selection-table">
+              <thead>
+                <tr>
+                  <th class="checkbox-header">
+                    <input type="checkbox" 
+                           [checked]="selectedImmunizations.length === immunizationList.length"
+                           (change)="toggleAllImmunizations()">
+                  </th>
+                  <th>CVX Code</th>
+                  <th>Vaccine Name</th>
+                  <th>Short Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let imm of immunizationList" 
+                    [class.selected-row]="isImmunizationSelected(imm.id)"
+                    (click)="toggleImmunizationSelection(imm.id)">
+                  <td class="checkbox-cell">
+                    <input type="checkbox" 
+                           [checked]="isImmunizationSelected(imm.id)"
+                           (click)="$event.stopPropagation()"
+                           (change)="toggleImmunizationSelection(imm.id)">
+                  </td>
+                  <td class="code-cell">{{ imm.cvxCode }}</td>
+                  <td class="name-cell">{{ imm.name }}</td>
+                  <td class="desc-cell">{{ imm.shortDescription }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Medications Table -->
+        <div class="table-section">
+          <h3>Select Medications</h3>
+          <div class="table-container">
+            <table class="selection-table">
+              <thead>
+                <tr>
+                  <th class="checkbox-header">
+                    <input type="checkbox" 
+                           [checked]="selectedMedications.length === medicationList.length"
+                           (change)="toggleAllMedications()">
+                  </th>
+                  <th>Medication Name</th>
+                  <th>Category</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let med of medicationList" 
+                    [class.selected-row]="isMedicationSelected(med.id)"
+                    (click)="toggleMedicationSelection(med.id)">
+                  <td class="checkbox-cell">
+                    <input type="checkbox" 
+                           [checked]="isMedicationSelected(med.id)"
+                           (click)="$event.stopPropagation()"
+                           (change)="toggleMedicationSelection(med.id)">
+                  </td>
+                  <td class="name-cell">{{ med.name }}</td>
+                  <td class="category-cell">{{ med.category }}</td>
+                  <td class="desc-cell">{{ med.description }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Practitioners Table -->
+        <div class="table-section">
+          <h3>Select Practitioners</h3>
+          <div class="table-container">
+            <table class="selection-table">
+              <thead>
+                                 <tr>
+                   <th class="checkbox-header">
+                     <button type="button" 
+                             class="clear-selection-btn"
+                             (click)="toggleAllPractitioners()"
+                             *ngIf="selectedPractitioner !== ''">
+                       Clear
+                     </button>
+                   </th>
+                  <th>Practitioner Name</th>
+                  <th>Specialty</th>
+                  <th>Credentials</th>
+                  <th>Department</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let prac of practitionerList" 
+                    [class.selected-row]="isPractitionerSelected(prac.id)"
+                    (click)="togglePractitionerSelection(prac.id)">
+                  <td class="checkbox-cell">
+                    <input type="radio" 
+                           [checked]="isPractitionerSelected(prac.id)"
+                           (click)="$event.stopPropagation()"
+                           (change)="togglePractitionerSelection(prac.id)"
+                           name="practitioner">
+                  </td>
+                  <td class="name-cell">{{ prac.name }}</td>
+                  <td class="specialty-cell">{{ prac.specialty }}</td>
+                  <td class="credentials-cell">{{ prac.credentials }}</td>
+                  <td class="dept-cell">{{ prac.department }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Selection Summary -->
+        <div class="selection-summary" *ngIf="selectedImmunizations.length > 0 || selectedMedications.length > 0 || selectedPractitioner !== ''">
+          <h3>Selected Items</h3>
+                      <div class="summary-grid">
+              <div class="summary-section" *ngIf="selectedImmunizations.length > 0">
+                <h4>Immunizations ({{ selectedImmunizations.length }})</h4>
+                <ul>
+                  <li *ngFor="let immId of selectedImmunizations">
+                    {{ getImmunizationName(immId) }}
+                  </li>
+                </ul>
+              </div>
+              <div class="summary-section" *ngIf="selectedMedications.length > 0">
+                <h4>Medications ({{ selectedMedications.length }})</h4>
+                <ul>
+                  <li *ngFor="let medId of selectedMedications">
+                    {{ getMedicationName(medId) }}
+                  </li>
+                </ul>
+              </div>
+              <div class="summary-section" *ngIf="selectedPractitioner !== ''">
+                <h4>Practitioner</h4>
+                <ul>
+                  <li>{{ getSelectedPractitionerName() }}</li>
+                </ul>
+              </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="goBack()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="selectedPractitioner === ''">Record Administration</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div> 

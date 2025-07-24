@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class DataApiService {
-    private SERVER_URL = (window as any)["LOCAL_FHIR_URL"] || '';
+    private SERVER_URL = (window as any)["SERVER_URL"] || '';
 
     constructor(private http: HttpClient) {}
 

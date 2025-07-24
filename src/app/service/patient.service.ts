@@ -11,7 +11,7 @@ export class PatientService {
   private _isDone = new BehaviorSubject<boolean>(false);
   private _showExportNotif = new BehaviorSubject<boolean>(false);
   private _lastExportDate = new BehaviorSubject<string | null>(localStorage.getItem('lastExportDate'));
-  private SERVER_URL = (window as any)["LOCAL_FHIR_URL"] || '';
+  private SERVER_URL = (window as any)["SERVER_URL"] || '';
 
   // Public observables
   public isSyncing$ = this._isSyncing.asObservable();

@@ -38,6 +38,7 @@ export class AdministerComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    window.scrollTo(0, 0);
     this.patientId = this.route.snapshot.paramMap.get('id') || '';
     // Get patient info from window (already loaded in patient list)
     const patients = (window as any).allPatients || [];

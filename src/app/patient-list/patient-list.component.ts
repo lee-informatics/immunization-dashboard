@@ -1,7 +1,7 @@
 import { Component, OnInit, QueryList, ViewChildren, ElementRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { PatientService } from './patient.service';
+import { PatientService } from '../service/patient.service';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 

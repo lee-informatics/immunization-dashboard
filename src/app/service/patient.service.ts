@@ -3,8 +3,6 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, map, switchMap, timer, throwError, BehaviorSubject } from 'rxjs';
 import { catchError, filter, take, map as rxMap } from 'rxjs/operators';
 
-const typesToExport = ["Immunization","Condition"]
-const BACKEND_URL = 'http://localhost:3001';
 
 @Injectable({ providedIn: 'root' })
 export class PatientService {
@@ -13,6 +11,7 @@ export class PatientService {
   private _isDone = new BehaviorSubject<boolean>(false);
   private _showExportNotif = new BehaviorSubject<boolean>(false);
   private _lastExportDate = new BehaviorSubject<string | null>(localStorage.getItem('lastExportDate'));
+  private SERVER_URL = (window as any)["LOCAL_FHIR_URL"] || '';
 
   // Public observables
   public isSyncing$ = this._isSyncing.asObservable();
@@ -40,20 +39,18 @@ export class PatientService {
 
   constructor(private http: HttpClient) {}
 
-  // 1. Get 100 patients from backend
   getPatients(count: number = 100): Observable<any[]> {
-    return this.http.get<any>(`${BACKEND_URL}/api/patients`, { params: { count: count.toString() } }).pipe(
+    return this.http.get<any>(`${this.SERVER_URL}/api/patients`, { params: { count: count.toString() } }).pipe(
       map(bundle => bundle.entry ? bundle.entry.map((e: any) => e.resource) : [])
     );
   }
 
-  // 2. Start export job via backend
   startExportJob(): Observable<string> {
     const headers = new HttpHeaders({
       'Accept': 'application/fhir+json',
       'Prefer': 'respond-async'
     });
-    return this.http.get<any>(`${BACKEND_URL}/api/patient-export`, { headers, observe: 'response' }).pipe(
+    return this.http.get<any>(`${this.SERVER_URL}/api/patient-export`, { headers, observe: 'response' }).pipe(
       map(res => {
         const jobId = res.body?.jobId;
         if (!jobId) throw new Error('No jobId returned from backend.');
@@ -62,10 +59,9 @@ export class PatientService {
     );
   }
 
-  // 3. Poll export status via backend
   pollExportStatus(jobId: string): Observable<any> {
     return timer(0, 10000).pipe(
-      switchMap(() => this.http.get(`${BACKEND_URL}/api/patient-export/status`, { params: { jobId }, observe: 'response' })),
+      switchMap(() => this.http.get(`${this.SERVER_URL}/api/patient-export/status`, { params: { jobId }, observe: 'response' })),
       map(res => {
         if (res.status === 202) {
           // Still processing, keep polling
@@ -83,9 +79,8 @@ export class PatientService {
     );
   }
 
-  // 4. Fetch and decode binary via backend
   fetchAndDecodeBinary(binaryId: string): Observable<any[]> {
-    return this.http.get<any>(`${BACKEND_URL}/api/binary/${binaryId}`).pipe(
+    return this.http.get<any>(`${this.SERVER_URL}/api/binary/${binaryId}`).pipe(
       rxMap(binaryResource => {
         const base64_data = binaryResource?.data;
         if (!base64_data) {
@@ -106,15 +101,15 @@ export class PatientService {
 
 
   getAllergiesByPatient(patientId: string): Observable<any[]> {
-    return this.http.get<any[]>(`${BACKEND_URL}/api/allergies/${patientId}`);
+    return this.http.get<any[]>(`${this.SERVER_URL}/api/allergies/${patientId}`);
   }
 
   getAllergiesExport(): Observable<any[]> {
-    return this.http.get<any[]>(`${BACKEND_URL}/api/allergies`);
+    return this.http.get<any[]>(`${this.SERVER_URL}/api/allergies`);
   }
 
   getImmunizationAndConditionsByPatient(patientId: string): Observable<any> {
-    return this.http.get<any>(`${BACKEND_URL}/api/bulk-export/patient/${patientId}`);
+    return this.http.get<any>(`${this.SERVER_URL}/api/bulk-export/patient/${patientId}`);
   }
 
   // Background processing method that persists across component destruction

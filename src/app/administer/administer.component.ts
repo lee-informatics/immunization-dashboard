@@ -2,10 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { PatientService } from '../patient-list/patient.service';
-import activeVaccinesData from '../data/active_vaccines.json';
-import medicationsData from '../data/medications.json';
-import practitionersData from '../data/practitioners.json';
+import { PatientService } from '../service/patient.service';
+import { DataApiService } from '../service/data-api.service';
 
 @Component({
   selector: 'app-administer',
@@ -26,41 +24,17 @@ export class AdministerComponent implements OnInit {
   // Single selection for practitioner
   selectedPractitioner: string = '';
 
-  // Real vaccine data from active_vaccines.json
-  immunizationList = activeVaccinesData
-    .filter(vaccine => !vaccine.nonvaccine) // Filter out non-vaccines
-    .map(vaccine => ({
-      id: vaccine.cvxCode.toString(),
-      name: vaccine.fullName,
-      shortDescription: vaccine.shortDescription,
-      cvxCode: vaccine.cvxCode
-    }))
-    .sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically
-
-      medicationList = medicationsData
-      .map(medication => ({
-        id: medication.id,
-        name: medication.name,
-        category: medication.category,
-        description: medication.description
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-
-    practitionerList = practitionersData
-      .map(practitioner => ({
-        id: practitioner.id,
-        name: practitioner.name,
-        specialty: practitioner.specialty,
-        credentials: practitioner.credentials,
-        department: practitioner.department
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+  immunizationList: any[] = [];
+  medicationList: any[] = [];
+  practitionerList: any[] = [];
+  loadingData: boolean = true;
 
   constructor(
     private route: ActivatedRoute, 
     private router: Router, 
     private datePipe: DatePipe, 
-    private patientService: PatientService
+    private patientService: PatientService,
+    private dataApi: DataApiService
   ) {}
 
   ngOnInit() {
@@ -80,6 +54,48 @@ export class AdministerComponent implements OnInit {
         }
       });
     }
+    // Fetch data from backend APIs
+    this.loadingData = true;
+    this.dataApi.getActiveVaccines().subscribe({
+      next: (vaccines) => {
+        this.immunizationList = (vaccines || [])
+          .filter((vaccine: any) => !vaccine.nonvaccine)
+          .map((vaccine: any) => ({
+            id: vaccine.cvxCode.toString(),
+            name: vaccine.fullName,
+            shortDescription: vaccine.shortDescription,
+            cvxCode: vaccine.cvxCode
+          }))
+          .sort((a: any, b: any) => a.name.localeCompare(b.name));
+        this.loadingData = false;
+      },
+      error: () => { this.loadingData = false; }
+    });
+    this.dataApi.getMedications().subscribe({
+      next: (medications) => {
+        this.medicationList = (medications || [])
+          .map((medication: any) => ({
+            id: medication.id,
+            name: medication.name,
+            category: medication.category,
+            description: medication.description
+          }))
+          .sort((a: any, b: any) => a.name.localeCompare(b.name));
+      }
+    });
+    this.dataApi.getPractitioners().subscribe({
+      next: (practitioners) => {
+        this.practitionerList = (practitioners || [])
+          .map((practitioner: any) => ({
+            id: practitioner.id,
+            name: practitioner.name,
+            specialty: practitioner.specialty,
+            credentials: practitioner.credentials,
+            department: practitioner.department
+          }))
+          .sort((a: any, b: any) => a.name.localeCompare(b.name));
+      }
+    });
   }
 
   goBack() {

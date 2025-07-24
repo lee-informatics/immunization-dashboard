@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { PatientService } from '../patient-list/patient.service';
+import { PatientService } from '../service/patient.service';
 
 @Component({
   selector: 'app-patient-detail',
@@ -229,7 +229,7 @@ export class PatientDetailComponent implements OnInit {
       { code: "03", display: "MMR (2-dose series by age 4–6)" },
       { code: "21", display: "Varicella (2-dose series by age 4–6)" },
       { code: "140", display: "Influenza, seasonal (annual)" },
-      // { code: "92", display: "Sample Vaccine" }
+      { code: "92", display: "Sample Vaccine" }
     ];
   }
 

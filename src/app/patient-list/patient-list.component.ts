@@ -128,16 +128,10 @@ export class PatientListComponent implements OnInit, OnDestroy {
     this.isSyncingAllergies = true;
     this.isAllergyDone = false;
     try {
-      // Fetch all allergies at once (no patient query param)
-      const tefcaQHINUrl = (window as any)["TEFCA_QHIN_DEFAULT_FHIR_URL"] || '';
-
-      (window as any)["IMMUNIZATION_DEFAULT_FHIR_URL"] || '';
-      const res = await fetch(tefcaQHINUrl + '/AllergyIntolerance', {
-        headers: { 'Accept': 'application/fhir+json' }
-      });
+      // Fetch all allergies from backend (which caches the response)
+      const res = await fetch('http://localhost:3001/api/allergies');
       if (!res.ok) throw new Error('Failed to fetch allergy info');
-      const data = await res.json();
-      const allAllergies = Array.isArray(data.entry) ? data.entry.map((e: any) => e.resource) : [];
+      const allAllergies = await res.json();
       // Group allergies by patient ID
       const allergiesByPatient: { [id: string]: any[] } = {};
       for (const allergy of allAllergies) {

@@ -4,13 +4,10 @@ import { Observable, map, switchMap, timer, throwError, BehaviorSubject } from '
 import { catchError, filter, take, map as rxMap } from 'rxjs/operators';
 
 const typesToExport = ["Immunization","Condition"]
+const BACKEND_URL = 'http://localhost:3001';
 
 @Injectable({ providedIn: 'root' })
 export class PatientService {
-  private fhirBaseUrl = (window as any)["IMMUNIZATION_DEFAULT_FHIR_URL"] || '';
-  private apiUrl = this.fhirBaseUrl + '/Patient?_count=100';
-  private exportUrl = this.fhirBaseUrl + '/Patient/$export';
-
   // State management for background processing
   private _isSyncing = new BehaviorSubject<boolean>(false);
   private _isDone = new BehaviorSubject<boolean>(false);
@@ -41,40 +38,35 @@ export class PatientService {
     localStorage.setItem('lastExportDate', exportDate);
   }
 
-  constructor(private http: HttpClient) {
-    console.log('IMMUNIZATION_DEFAULT_FHIR_URL:', (window as any)["IMMUNIZATION_DEFAULT_FHIR_URL"]);
-    console.log('fhirBaseUrl:', this.fhirBaseUrl);
-    console.log('apiUrl:', this.apiUrl);
-    console.log('exportUrl:', this.exportUrl);
-  }
+  constructor(private http: HttpClient) {}
 
-  getPatients(): Observable<any[]> {
-    return this.http.get<any>(this.apiUrl).pipe(
+  // 1. Get 100 patients from backend
+  getPatients(count: number = 100): Observable<any[]> {
+    return this.http.get<any>(`${BACKEND_URL}/api/patients`, { params: { count: count.toString() } }).pipe(
       map(bundle => bundle.entry ? bundle.entry.map((e: any) => e.resource) : [])
     );
   }
 
+  // 2. Start export job via backend
   startExportJob(): Observable<string> {
     const headers = new HttpHeaders({
       'Accept': 'application/fhir+json',
       'Prefer': 'respond-async'
     });
-    const typeParam = typesToExport.length > 0 ? `?_type=${typesToExport.join(',')}` : '';
-    const url = this.exportUrl + typeParam;
-    const startTime = Date.now();
-    return this.http.get(url, { headers, observe: 'response' }).pipe(
+    // typesToExport can be passed as query param if needed
+    return this.http.get<any>(`${BACKEND_URL}/api/patient-export`, { headers, observe: 'response' }).pipe(
       map(res => {
-        const endTime = Date.now();
-        const pollUrl = res.headers.get('Content-Location');
+        const pollUrl = res.body?.pollUrl;
         if (!pollUrl) throw new Error('No Content-Location returned.');
         return pollUrl;
       })
     );
   }
 
+  // 3. Poll export status via backend
   pollExportStatus(pollUrl: string): Observable<any> {
     return timer(0, 10000).pipe(
-      switchMap(() => this.http.get(pollUrl, { observe: 'response' })),
+      switchMap(() => this.http.get(`${BACKEND_URL}/api/patient-export/poll`, { params: { pollUrl }, observe: 'response' })),
       map(res => {
         if (res.status === 202) {
           // Still processing, keep polling
@@ -92,10 +84,9 @@ export class PatientService {
     );
   }
 
+  // 4. Fetch and decode binary via backend
   fetchAndDecodeBinary(binaryId: string): Observable<any[]> {
-    const url = `${this.fhirBaseUrl}/Binary/${binaryId}`;
-    const headers = new HttpHeaders({ 'Accept': 'application/fhir+json' });
-    return this.http.get<any>(url, { headers }).pipe(
+    return this.http.get<any>(`${BACKEND_URL}/api/binary/${binaryId}`).pipe(
       rxMap(binaryResource => {
         const base64_data = binaryResource?.data;
         if (!base64_data) {
@@ -117,10 +108,8 @@ export class PatientService {
   // Background processing method that persists across component destruction
   startBackgroundImmunizationExport(): void {
     if (this.isSyncing) return;
-    
     this._isDone.next(false);
     this._isSyncing.next(true);
-    
     this.startExportJob().subscribe({
       next: (pollUrl) => {
         this.pollExportStatus(pollUrl).subscribe({
@@ -128,17 +117,10 @@ export class PatientService {
             this._isSyncing.next(false);
             this._isDone.next(true);
             this._showExportNotif.next(true);
-            
-            // Hide notification after 3 seconds
-            setTimeout(() => { 
-              this._showExportNotif.next(false); 
-            }, 3000);
-            
-            // Update last export date
+            setTimeout(() => { this._showExportNotif.next(false); }, 3000);
             const exportDate = new Date().toLocaleString();
             this._lastExportDate.next(exportDate);
             localStorage.setItem('lastExportDate', exportDate);
-            
             // Extract and cache Immunization/Condition Binary IDs
             const output = Array.isArray(result?.output) ? result.output : [];
             const ids: { Immunization: string[]; Condition: string[] } = { Immunization: [], Condition: [] };
@@ -150,17 +132,9 @@ export class PatientService {
                 }
               }
             }
-            
-            // Cache the binary IDs
             localStorage.setItem('immunization_condition_binary_ids', JSON.stringify(ids));
-            
-            // Process the data in background
             this.processAndCachePatientData(ids.Immunization, ids.Condition);
-            
-            // Reset done state after 2.5 seconds
-            setTimeout(() => { 
-              this._isDone.next(false); 
-            }, 2500);
+            setTimeout(() => { this._isDone.next(false); }, 2500);
           },
           error: (err) => {
             this._isSyncing.next(false);
@@ -187,16 +161,13 @@ export class PatientService {
         grouped = JSON.parse(groupedRaw);
       } catch {}
     }
-    
     let totalToFetch = immunizationIds.length + conditionIds.length;
     let fetched = 0;
-    
     const finish = () => {
       if (++fetched === totalToFetch) {
         localStorage.setItem('grouped_patient_data', JSON.stringify(grouped));
       }
     };
-    
     // Process Immunizations
     for (const id of immunizationIds) {
       this.fetchAndDecodeBinary(id).subscribe({
@@ -225,7 +196,6 @@ export class PatientService {
         }
       });
     }
-    
     // Process Conditions
     for (const id of conditionIds) {
       this.fetchAndDecodeBinary(id).subscribe({

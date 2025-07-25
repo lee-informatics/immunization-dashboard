@@ -2,8 +2,12 @@
   <button class="back-btn" (click)="goBack()">&larr; Back</button>
   
   <div class="header-block">
-    <h1>Administer Treatment</h1>
-    <div class="subtitle">Record immunization, medication, or treatment administration</div>
+    <h1 *ngIf="adminType === 'immunization'">Administer Immunization</h1>
+    <h1 *ngIf="adminType === 'medication'">Administer Medication</h1>
+    <div class="subtitle">
+      <span *ngIf="adminType === 'immunization'">Record immunization administration</span>
+      <span *ngIf="adminType === 'medication'">Record medication administration</span>
+    </div>
     
     <!-- Patient Details Section -->
     <div class="patient-summary">
@@ -24,19 +28,27 @@
   
   <div *ngIf="patient" class="administer-form">
     <form (ngSubmit)="onSubmit()">
+      <!-- Validation Errors Display -->
+      <div class="validation-errors" *ngIf="validationErrors.length > 0">
+        <h4>Please fix the following errors:</h4>
+        <ul>
+          <li *ngFor="let error of validationErrors">{{ error }}</li>
+        </ul>
+      </div>
+
       <div class="form-section">
         <h2>Administration Details</h2>
         
         <!-- Immunizations Table -->
-        <div class="table-section">
-          <h3>Select Immunizations</h3>
+        <div class="table-section" *ngIf="adminType === 'immunization'">
+          <h3>Select Immunizations <span class="required-indicator">*</span></h3>
           <div class="table-container">
             <table class="selection-table">
               <thead>
                 <tr>
                   <th class="checkbox-header">
                     <input type="checkbox" 
-                           [checked]="selectedImmunizations.length === immunizationList.length"
+                           [checked]="selectedImmunizations.length === immunizationList.length && immunizationList.length > 0"
                            (change)="toggleAllImmunizations()">
                   </th>
                   <th>CVX Code</th>
@@ -61,23 +73,27 @@
               </tbody>
             </table>
           </div>
+          <div class="table-footer" *ngIf="immunizationList.length === 0">
+            <p class="no-data-message">No immunizations available. Please try refreshing the page.</p>
+          </div>
         </div>
 
         <!-- Medications Table -->
-        <div class="table-section">
-          <h3>Select Medications</h3>
+        <div class="table-section" *ngIf="adminType === 'medication'">
+          <h3>Select Medications <span class="required-indicator">*</span></h3>
           <div class="table-container">
             <table class="selection-table">
               <thead>
                 <tr>
                   <th class="checkbox-header">
                     <input type="checkbox" 
-                           [checked]="selectedMedications.length === medicationList.length"
+                           [checked]="selectedMedications.length === medicationList.length && medicationList.length > 0"
                            (change)="toggleAllMedications()">
                   </th>
                   <th>Medication Name</th>
                   <th>Category</th>
                   <th>Description</th>
+                  <th>Dosage</th>
                 </tr>
               </thead>
               <tbody>
@@ -93,31 +109,32 @@
                   <td class="name-cell">{{ med.name }}</td>
                   <td class="category-cell">{{ med.category }}</td>
                   <td class="desc-cell">{{ med.description }}</td>
+                  <td class="dosage-cell">{{ med.dosage?.dose?.value }} {{ med.dosage?.dose?.unit }}</td>
                 </tr>
               </tbody>
             </table>
+          </div>
+          <div class="table-footer" *ngIf="medicationList.length === 0">
+            <p class="no-data-message">No medications available. Please try refreshing the page.</p>
           </div>
         </div>
 
         <!-- Practitioners Table -->
         <div class="table-section">
-          <h3>Select Practitioners</h3>
+          <h3>Select Practitioner <span class="required-indicator">*</span></h3>
           <div class="table-container">
             <table class="selection-table">
               <thead>
-                                 <tr>
-                   <th class="checkbox-header">
-                     <button type="button" 
-                             class="clear-selection-btn"
-                             (click)="toggleAllPractitioners()"
-                             *ngIf="selectedPractitioner !== ''">
-                       Clear
-                     </button>
-                   </th>
+                <tr>
+                  <th class="checkbox-header">
+                    <button type="button" 
+                            class="clear-selection-btn"
+                            (click)="toggleAllPractitioners()"
+                            *ngIf="selectedPractitioner !== ''">
+                      Clear
+                    </button>
+                  </th>
                   <th>Practitioner Name</th>
-                  <th>Specialty</th>
-                  <th>Credentials</th>
-                  <th>Department</th>
                 </tr>
               </thead>
               <tbody>
@@ -132,47 +149,56 @@
                            name="practitioner">
                   </td>
                   <td class="name-cell">{{ prac.name }}</td>
-                  <td class="specialty-cell">{{ prac.specialty }}</td>
-                  <td class="credentials-cell">{{ prac.credentials }}</td>
-                  <td class="dept-cell">{{ prac.department }}</td>
                 </tr>
               </tbody>
             </table>
+          </div>
+          <div class="table-footer" *ngIf="practitionerList.length === 0">
+            <p class="no-data-message">No practitioners available. Please try refreshing the page.</p>
           </div>
         </div>
 
         <!-- Selection Summary -->
         <div class="selection-summary" *ngIf="selectedImmunizations.length > 0 || selectedMedications.length > 0 || selectedPractitioner !== ''">
           <h3>Selected Items</h3>
-                      <div class="summary-grid">
-              <div class="summary-section" *ngIf="selectedImmunizations.length > 0">
-                <h4>Immunizations ({{ selectedImmunizations.length }})</h4>
-                <ul>
-                  <li *ngFor="let immId of selectedImmunizations">
-                    {{ getImmunizationName(immId) }}
-                  </li>
-                </ul>
-              </div>
-              <div class="summary-section" *ngIf="selectedMedications.length > 0">
-                <h4>Medications ({{ selectedMedications.length }})</h4>
-                <ul>
-                  <li *ngFor="let medId of selectedMedications">
-                    {{ getMedicationName(medId) }}
-                  </li>
-                </ul>
-              </div>
-              <div class="summary-section" *ngIf="selectedPractitioner !== ''">
-                <h4>Practitioner</h4>
-                <ul>
-                  <li>{{ getSelectedPractitionerName() }}</li>
-                </ul>
-              </div>
+          <div class="summary-grid">
+            <div class="summary-section" *ngIf="selectedImmunizations.length > 0">
+              <h4>Immunizations ({{ selectedImmunizations.length }})</h4>
+              <ul>
+                <li *ngFor="let immId of selectedImmunizations">
+                  {{ getImmunizationName(immId) }}
+                </li>
+              </ul>
             </div>
+            <div class="summary-section" *ngIf="selectedMedications.length > 0">
+              <h4>Medications ({{ selectedMedications.length }})</h4>
+              <ul>
+                <li *ngFor="let medId of selectedMedications">
+                  {{ getMedicationName(medId) }}
+                </li>
+              </ul>
+            </div>
+            <div class="summary-section" *ngIf="selectedPractitioner !== ''">
+              <h4>Practitioner</h4>
+              <ul>
+                <li>{{ getSelectedPractitionerName() }}</li>
+              </ul>
+            </div>
+          </div>
         </div>
 
         <div class="form-actions">
-          <button type="button" class="btn-secondary" (click)="goBack()">Cancel</button>
-          <button type="submit" class="btn-primary" [disabled]="selectedPractitioner === ''">Record Administration</button>
+          <button type="button" class="btn-secondary" (click)="goBack()" [disabled]="isSubmitting">Cancel</button>
+          <button type="submit" 
+                  class="btn-primary" 
+                  [disabled]="!isFormValid() || isSubmitting"
+                  [class.loading]="isSubmitting">
+            <span *ngIf="!isSubmitting">Record Administration</span>
+            <span *ngIf="isSubmitting">
+              <span class="spinner-inline"></span>
+              Recording...
+            </span>
+          </button>
         </div>
       </div>
     </form>

@@ -114,6 +114,14 @@ export class PatientDetailComponent implements OnInit {
     this.router.navigate(['/patient', this.patientId, 'administer']);
   }
 
+  navigateToAdministerImmunization() {
+    this.router.navigate(['/patient', this.patientId, 'administer-immunization']);
+  }
+
+  navigateToAdministerMedication() {
+    this.router.navigate(['/patient', this.patientId, 'administer-medication']);
+  }
+
   getRace(patient: any): string {
     if (!patient?.extension) return 'N/A';
     const raceExt = patient.extension.find((e: any) => e.url && e.url.includes('us-core-race'));

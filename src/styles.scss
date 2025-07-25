@@ -1,1 +1,42 @@
-/* You can add global styles to this file, and also import other style files */
+.toast-success {
+  background: #27ae60 !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  font-size: 1.08rem !important;
+  font-weight: 500 !important;
+  box-shadow: 0 4px 24px rgba(44, 62, 80, 0.12) !important;
+  border: none !important;
+  padding: 0.9em 2em !important;
+}
+
+.toast-error {
+  background: #e74c3c !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  font-size: 1.08rem !important;
+  font-weight: 500 !important;
+  box-shadow: 0 4px 24px rgba(44, 62, 80, 0.12) !important;
+  border: none !important;
+  padding: 0.9em 2em !important;
+}
+
+/* Override default toast styling */
+#toast-container > div {
+  opacity: 1 !important;
+  border-radius: 8px !important;
+  font-size: 1.08rem !important;
+  font-weight: 500 !important;
+  box-shadow: 0 4px 24px rgba(44, 62, 80, 0.12) !important;
+  border: none !important;
+  padding: 0.9em 2em !important;
+}
+
+#toast-container > .toast-success {
+  background: #27ae60 !important;
+  color: #fff !important;
+}
+
+#toast-container > .toast-error {
+  background: #e74c3c !important;
+  color: #fff !important;
+}

@@ -17,7 +17,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withInterceptorsFromDi()),
     provideAnimations(),
-    provideToastr({ positionClass: 'toast-bottom-right' }),
+    provideToastr({ positionClass: 'toast-top-right' }),
     SettingsService
   ]
 };

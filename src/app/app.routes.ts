@@ -12,5 +12,7 @@ export const routes: Routes = [
     },
     { path: 'patient/:id', component: PatientDetailComponent },
     { path: 'patient/:id/administer', component: AdministerComponent },
+    { path: 'patient/:id/administer-immunization', component: AdministerComponent },
+    { path: 'patient/:id/administer-medication', component: AdministerComponent },
     { path: 'settings', component: SettingsComponent },
 ];

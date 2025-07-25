@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, map, switchMap, timer, throwError, BehaviorSubject } from 'rxjs';
 import { catchError, filter, take, map as rxMap } from 'rxjs/operators';
+import { ToastrService } from 'ngx-toastr';
 
 
 @Injectable({ providedIn: 'root' })
@@ -37,7 +38,7 @@ export class PatientService {
     localStorage.setItem('lastExportDate', exportDate);
   }
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private toastr: ToastrService) {}
 
   getPatients(count: number = 100): Observable<any[]> {
     return this.http.get<any>(`${this.SERVER_URL}/api/patients`, { params: { count: count.toString() } }).pipe(
@@ -146,16 +147,14 @@ export class PatientService {
           error: (err) => {
             this._isSyncing.next(false);
             this._isDone.next(false);
-            console.error('Export failed:', err);
-            alert('Export failed: ' + (err?.message || err));
+            this.toastr.error('Export failed: ' + (err?.message || err));
           }
         });
       },
       error: (err) => {
         this._isSyncing.next(false);
         this._isDone.next(false);
-        console.error('Export failed:', err);
-        alert('Export failed: ' + (err?.message || err));
+        this.toastr.error('Export failed: ' + (err?.message || err));
       }
     });
   }

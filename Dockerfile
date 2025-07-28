@@ -20,8 +20,6 @@ WORKDIR /usr/share/nginx/html
 
 # Remove any default nginx content
 RUN rm -rf *
-ENV IMMUNIZATION_DEFAULT_FHIR_URL=https://immunization-iis.ph.hl7.org/fhir
-ENV TEFCA_QHIN_DEFAULT_FHIR_URL=https://immunization-qhin.ph.hl7.org/fhir
 
 # Copy build from "builder" stage, as well as runtime configuration script public folder
 COPY --from=builder /app/dist/immunization-dashboard/browser .

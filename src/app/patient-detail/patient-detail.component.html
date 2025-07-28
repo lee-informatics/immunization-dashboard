@@ -57,7 +57,12 @@
         <tr *ngFor="let vax of getMissingRecommendedVaccines()">
           <td>{{ vax.display }}</td>
           <td>{{ vax.code }}</td>
-          <td><button class="administer-btn">Administer</button></td>
+          <td>
+            <div style="display: flex; justify-content: space-between; gap: 1em;">
+              <button class="administer-btn" style="width: 48%;" (click)="navigateToAdministerImmunization()">Administer Immunization</button>
+              <button class="administer-btn" style="width: 48%; background: #1976d2;" (click)="navigateToAdministerMedication()">Administer Medication</button>
+            </div>
+          </td>
         </tr>
       </tbody>
     </table>

@@ -1,7 +1,7 @@
 import { Component, OnInit, QueryList, ViewChildren, ElementRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { PatientService } from './patient.service';
+import { PatientService } from '../service/patient.service';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 
@@ -128,76 +128,15 @@ export class PatientListComponent implements OnInit, OnDestroy {
     this.isSyncingAllergies = true;
     this.isAllergyDone = false;
     try {
-      // Fetch all allergies at once (no patient query param)
-      const tefcaQHINUrl = (window as any)["TEFCA_QHIN_DEFAULT_FHIR_URL"] || '';
-
-      (window as any)["IMMUNIZATION_DEFAULT_FHIR_URL"] || '';
-      const res = await fetch(tefcaQHINUrl + '/AllergyIntolerance', {
-        headers: { 'Accept': 'application/fhir+json' }
-      });
-      if (!res.ok) throw new Error('Failed to fetch allergy info');
-      const data = await res.json();
-      const allAllergies = Array.isArray(data.entry) ? data.entry.map((e: any) => e.resource) : [];
-      // Group allergies by patient ID
-      const allergiesByPatient: { [id: string]: any[] } = {};
-      for (const allergy of allAllergies) {
-        const patientRef = allergy.patient?.reference;
-        if (patientRef && patientRef.startsWith('Patient/')) {
-          const pid = patientRef.split('/')[1];
-          if (!allergiesByPatient[pid]) allergiesByPatient[pid] = [];
-          allergiesByPatient[pid].push(allergy);
-        }
-      }
-      // Update grouped_patient_data in localStorage
-      const groupedRaw = localStorage.getItem(this.GROUPED_CACHE_KEY);
-      let grouped: { [patientId: string]: { patient_id: string, conditions: any[], immunizations: any[], allergies?: any[] } } = {};
-      if (groupedRaw) {
-        try {
-          grouped = JSON.parse(groupedRaw);
-        } catch {}
-      }
-      for (const patient of this.patients) {
-        if (!patient.id) continue;
-        if (!grouped[patient.id]) {
-          grouped[patient.id] = {
-            patient_id: patient.id,
-            conditions: [],
-            immunizations: [],
-            allergies: []
-          };
-        }
-        grouped[patient.id].allergies = allergiesByPatient[patient.id] || [];
-      }
-      localStorage.setItem(this.GROUPED_CACHE_KEY, JSON.stringify(grouped));
+      // Fetch all allergies using the export API
+      const allergies = await this.patientService.getAllergiesExport().toPromise();
+      // Optionally, do something with the allergies data here (e.g., display, process, etc.)
       this.lastAllergyExportDate = new Date().toLocaleString();
       localStorage.setItem('lastAllergyExportDate', this.lastAllergyExportDate);
-      // Show notification for successful allergy records update
       this.showAllergyExportNotif = true;
       setTimeout(() => { this.showAllergyExportNotif = false; }, 3000);
     } catch (err) {
-      // On error, still update grouped_patient_data with empty allergies
-      const groupedRaw = localStorage.getItem(this.GROUPED_CACHE_KEY);
-      let grouped: { [patientId: string]: { patient_id: string, conditions: any[], immunizations: any[], allergies?: any[] } } = {};
-      if (groupedRaw) {
-        try {
-          grouped = JSON.parse(groupedRaw);
-        } catch {}
-      }
-      for (const patient of this.patients) {
-        if (!patient.id) continue;
-        if (!grouped[patient.id]) {
-          grouped[patient.id] = {
-            patient_id: patient.id,
-            conditions: [],
-            immunizations: [],
-            allergies: []
-          };
-        }
-        grouped[patient.id].allergies = [];
-      }
-      localStorage.setItem(this.GROUPED_CACHE_KEY, JSON.stringify(grouped));
-      this.lastAllergyExportDate = new Date().toLocaleString();
-      localStorage.setItem('lastAllergyExportDate', this.lastAllergyExportDate);
+      // Optionally, handle error (e.g., show error notification)
     }
     this.isSyncingAllergies = false;
     this.isAllergyDone = true;

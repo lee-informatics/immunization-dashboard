@@ -26,9 +26,10 @@
     </select>
     <div class="flex-spacer"></div>
     <div class="update-btns-col">
-      <button class="update-btn" (click)="updateImmunization()" [disabled]="isSyncing">
+      <button class="update-btn" (click)="updateImmunization()" [disabled]="isSyncing" title="Fetches the latest immunization and condition records from the State IIS. This may take a minute or two.">
         <span *ngIf="isSyncing" class="spinner-inline"></span>
-        Get Immunization Records (State IIS)
+        <span *ngIf="!isSyncing">Get Immunization Records (State IIS)</span>
+        <span *ngIf="isSyncing">Syncing...</span>
       </button>
       <button class="update-btn" (click)="updateAllAllergies()" [disabled]="isSyncingAllergies">
         <span *ngIf="isSyncingAllergies" class="spinner-inline"></span>

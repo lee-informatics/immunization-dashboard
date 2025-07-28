@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "SERVER_URL=http://localhost:3001 envsubst < public/configuration.template.js > public/configuration.js && ng serve",
+    "start": "envsubst < public/configuration.template.js > public/configuration.js && ng serve",
     "build": "ng build",
-    "watch": "SERVER_URL=http://localhost:3001 envsubst < public/configuration.template.js > public/configuration.js && ng build --watch --configuration development",
+    "watch": "envsubst < public/configuration.template.js > public/configuration.js && ng build --watch --configuration development",
     "test": "ng test"
   },
   "prettier": {

@@ -2,6 +2,8 @@ import { Component, effect } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { SettingsService } from '../settings/settings.service';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-navbar',
@@ -13,8 +15,12 @@ import { CommonModule } from '@angular/common';
 export class NavbarComponent {
   helpTextEnabled = false;
   developerMode = false;
+  private SERVER_URL = (window as any)["SERVER_URL"] || '';
 
-  constructor(public settingsService: SettingsService) {
+  constructor(
+    public settingsService: SettingsService,
+    private http: HttpClient
+  ) {
     // Load help text toggle state from localStorage
     const stored = localStorage.getItem('helpTextEnabled');
     this.helpTextEnabled = stored === 'true';
@@ -34,7 +40,16 @@ export class NavbarComponent {
     window.location.pathname = '/';
   }
 
-  clearCache() {
+  async clearCache() {
+    try {
+      // Clear server cache
+      await firstValueFrom(this.http.delete(`${this.SERVER_URL}/api/cache`));
+      console.log('Server cache cleared successfully');
+    } catch (error) {
+      console.error('Failed to clear server cache:', error);
+    }
+    
+    // Clear local cache and reload
     localStorage.clear();
     window.location.reload();
   }

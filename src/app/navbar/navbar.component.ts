@@ -4,6 +4,7 @@ import { SettingsService } from '../settings/settings.service';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { DataApiService } from '../service/data-api.service';
 
 @Component({
   selector: 'app-navbar',
@@ -15,10 +16,11 @@ import { firstValueFrom } from 'rxjs';
 export class NavbarComponent {
   helpTextEnabled = false;
   developerMode = false;
-  private SERVER_URL = (window as any)["SERVER_URL"] || '';
+  
 
   constructor(
     public settingsService: SettingsService,
+    public dataApiService: DataApiService,
     private http: HttpClient
   ) {
     // Load help text toggle state from localStorage
@@ -43,7 +45,7 @@ export class NavbarComponent {
   async clearCache() {
     try {
       // Clear server cache
-      await firstValueFrom(this.http.delete(`${this.SERVER_URL}/api/cache`));
+      await firstValueFrom(this.http.delete(`${this.dataApiService.serverURL}/api/cache`));
       console.log('Server cache cleared successfully');
     } catch (error) {
       console.error('Failed to clear server cache:', error);

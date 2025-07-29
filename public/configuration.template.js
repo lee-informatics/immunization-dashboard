@@ -1,4 +1,4 @@
 (function(window) {
     // Environment variables
-    window["SERVER_URL"] = "${SERVER_URL}"
+    window["IMMUNIZATION_SERVER_URL"] = "${IMMUNIZATION_SERVER_URL}"
 })(this);

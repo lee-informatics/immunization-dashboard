@@ -43,6 +43,36 @@
   font-size: 1.05rem;
 }
 
+.refresh-section {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.refresh-btn {
+  background: linear-gradient(90deg, #27ae60 0%, #2ecc71 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5em 1.2em;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(39, 174, 96, 0.15);
+  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+  outline: none;
+  letter-spacing: 0.3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.refresh-btn:hover {
+  background: linear-gradient(90deg, #229954 0%, #27ae60 100%);
+  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.25);
+  transform: scale(1.02);
+}
+
 .section-block {
   margin-bottom: 2.5rem;
 }

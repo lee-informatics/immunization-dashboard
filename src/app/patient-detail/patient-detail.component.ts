@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PatientService } from '../service/patient.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-patient-detail',
@@ -12,12 +13,16 @@ import { PatientService } from '../service/patient.service';
   imports: [CommonModule, FormsModule],
   providers: [DatePipe]
 })
-export class PatientDetailComponent implements OnInit {
+export class PatientDetailComponent implements OnInit, OnDestroy {
   patientId: string = '';
   patient: any = null;
   immunizations: any[] = [];
   conditions: any[] = [];
   loadingPatient: boolean = false;
+  loadingImmunizations: boolean = false;
+  loadingConditions: boolean = false;
+  immunizationError: string | null = null;
+  conditionError: string | null = null;
   allergies: any[] = [];
   loadingAllergies: boolean = false;
   allergyError: string | null = null;
@@ -31,32 +36,113 @@ export class PatientDetailComponent implements OnInit {
   condSort: { key: string, dir: 'asc' | 'desc' } = { key: 'onsetDateTime', dir: 'desc' };
   condFilters: { [key: string]: string } = {};
 
+  private routeSubscription?: Subscription;
+
   constructor(private route: ActivatedRoute, private router: Router, private datePipe: DatePipe, private patientService: PatientService) {}
 
   ngOnInit() {
+    console.log('[DEBUG] ngOnInit called');
     this.patientId = this.route.snapshot.paramMap.get('id') || '';
+    console.log('[DEBUG] Patient ID from route:', this.patientId);
+    
+    // Subscribe to route changes to refresh data when navigating back
+    this.routeSubscription = this.route.params.subscribe(params => {
+      const newPatientId = params['id'];
+      if (newPatientId && newPatientId !== this.patientId) {
+        this.patientId = newPatientId;
+        this.loadPatientData();
+      }
+    });
+    
+    this.loadPatientData();
+  }
+
+  ngOnDestroy() {
+    if (this.routeSubscription) {
+      this.routeSubscription.unsubscribe();
+    }
+  }
+
+  loadPatientData() {
     // Get patient info from window (already loaded in patient list)
     const patients = (window as any).allPatients || [];
+    console.log('[DEBUG] Patients from window:', patients);
     this.patient = patients.find((p: any) => p.id === this.patientId);
+    console.log('[DEBUG] Found patient:', this.patient);
     if (!this.patient) {
+      console.log('[DEBUG] Patient not found in window, fetching from API');
       this.loadingPatient = true;
       this.patientService.getPatients().subscribe({
         next: (data: any[]) => {
+          console.log('[DEBUG] Patients API response:', data);
           this.patient = data.find((p: any) => p.id === this.patientId);
+          console.log('[DEBUG] Patient found from API:', this.patient);
           this.loadingPatient = false;
           if (this.patient) {
-            this.fetchImmunizationAndConditions();
-            this.fetchAllergies();
+            console.log('[DEBUG] Calling fetchImmunizations, fetchConditions and fetchAllergies');
+            this.fetchImmunizations();
+            this.fetchConditions();
+            this.loadAllergiesFromCache(); // Load from cache first
+            this.fetchAllergies(); // Then fetch fresh data
           }
         },
-        error: () => {
+        error: (err) => {
+          console.error('[DEBUG] Error fetching patients:', err);
           this.loadingPatient = false;
         }
       });
     } else {
-      this.fetchImmunizationAndConditions();
-      this.fetchAllergies();
+      console.log('[DEBUG] Patient found in window, calling fetchImmunizations, fetchConditions and fetchAllergies');
+      this.fetchImmunizations();
+      this.fetchConditions();
+      this.loadAllergiesFromCache(); // Load from cache first
+      this.fetchAllergies(); // Then fetch fresh data
     }
+  }
+
+  // Refresh all patient data (called after administration)
+  refreshAllData() {
+    console.log('[DEBUG] Refreshing all patient data');
+    this.patientService.refreshPatientDetailData(this.patientId);
+    this.fetchImmunizations();
+    this.fetchConditions();
+    this.fetchAllergies();
+  }
+
+  fetchImmunizations() {
+    this.loadingImmunizations = true;
+    this.immunizationError = null;
+    this.patientService.getImmunizationsByPatient(this.patientId).subscribe({
+      next: (data: any[]) => {
+        this.immunizations = Array.isArray(data) ? data : [];
+        this.loadingImmunizations = false;
+        console.log('[DEBUG] Immunizations loaded:', this.immunizations.length);
+      },
+      error: (err) => {
+        console.error('[DEBUG] Error fetching immunizations:', err);
+        this.immunizations = [];
+        this.loadingImmunizations = false;
+        this.immunizationError = err?.error?.error || err?.message || 'Failed to fetch immunization records.';
+      }
+    });
+  }
+
+  fetchConditions() {
+    this.loadingConditions = true;
+    this.conditionError = null;
+    this.patientService.getConditionsByPatient(this.patientId).subscribe({
+      next: (data: any[]) => {
+        this.conditions = Array.isArray(data) ? data : [];
+        this.loadingConditions = false;
+        console.log('[DEBUG] Conditions loaded:', this.conditions.length);
+      },
+      error: (err) => {
+        console.error('[DEBUG] Error fetching conditions:', err);
+        this.conditions = [];
+        this.loadingConditions = false;
+        this.conditionError = err?.error?.error || err?.message || 'Failed to fetch condition records.';
+      }
+    });
   }
 
   fetchImmunizationAndConditions() {
@@ -76,15 +162,20 @@ export class PatientDetailComponent implements OnInit {
   }
 
   loadAllergiesFromCache() {
+    console.log('[DEBUG] loadAllergiesFromCache called');
     const groupedRaw = localStorage.getItem('grouped_patient_data');
+    console.log('[DEBUG] grouped_patient_data from localStorage:', groupedRaw);
     let allergies: any[] | undefined = undefined;
     this.allergiesDisplayState = 'none';
     if (groupedRaw) {
       try {
         const grouped = JSON.parse(groupedRaw);
+        console.log('[DEBUG] Parsed grouped data:', grouped);
         const entry = grouped[String(this.patientId)];
+        console.log('[DEBUG] Entry for patient ID', this.patientId, ':', entry);
         if (entry && entry.hasOwnProperty('allergies')) {
           allergies = entry.allergies;
+          console.log('[DEBUG] Allergies from cache:', allergies);
           if (Array.isArray(allergies) && allergies.length > 0) {
             this.allergiesDisplayState = 'show';
           } else {
@@ -93,10 +184,12 @@ export class PatientDetailComponent implements OnInit {
         } else {
           this.allergiesDisplayState = 'none';
         }
-      } catch {
+      } catch (error) {
+        console.error('[DEBUG] Error parsing grouped data:', error);
         this.allergiesDisplayState = 'none';
       }
     } else {
+      console.log('[DEBUG] No grouped_patient_data in localStorage');
       this.allergiesDisplayState = 'none';
     }
     if (allergies !== undefined) {
@@ -104,6 +197,8 @@ export class PatientDetailComponent implements OnInit {
     } else {
       this.allergies = [];
     }
+    console.log('[DEBUG] Final allergies array:', this.allergies);
+    console.log('[DEBUG] Final allergiesDisplayState:', this.allergiesDisplayState);
   }
 
   goBack() {
@@ -265,19 +360,22 @@ export class PatientDetailComponent implements OnInit {
     return age;
   }
 
-  /**
-   * Fetch allergy information for the patient from backend API
-   */
+  
+  // Fetch allergy information for the patient from backend API
   fetchAllergies() {
+    console.log('[DEBUG] fetchAllergies called with patient:', this.patient);
     if (!this.patient?.id) {
+      console.log('[DEBUG] No patient ID found, returning early');
       this.allergyError = 'No patient selected.';
       return;
     }
+    console.log('[DEBUG] Calling getAllergiesByPatient with patient ID:', this.patient.id);
     this.allergyButtonPressed = true;
     this.loadingAllergies = true;
     this.allergyError = null;
     this.patientService.getAllergiesByPatient(this.patient.id).subscribe({
       next: (allergies: any[]) => {
+        console.log('[DEBUG] Allergies API response:', allergies);
         this.allergies = Array.isArray(allergies) ? allergies : [];
         if (this.allergies.length > 0) {
           this.allergiesDisplayState = 'show';
@@ -287,6 +385,7 @@ export class PatientDetailComponent implements OnInit {
         this.loadingAllergies = false;
       },
       error: (err) => {
+        console.error('[DEBUG] Allergies API error:', err);
         this.allergies = [];
         this.allergiesDisplayState = 'none';
         this.loadingAllergies = false;

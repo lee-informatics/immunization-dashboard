@@ -8,6 +8,8 @@
     </div>
   </div>
   <div *ngIf="showExportNotif" class="export-notif">Immunization records updated</div>
+  <div *ngIf="showImportNotif" class="export-notif">Import completed successfully</div>
+  <div *ngIf="isImporting" class="export-notif importing">Importing data...</div>
   <div *ngIf="showAllergyExportNotif" class="export-notif">Allergy records updated</div>
   <div class="filters">
     <input
@@ -26,10 +28,11 @@
     </select>
     <div class="flex-spacer"></div>
     <div class="update-btns-col">
-      <button class="update-btn" (click)="updateImmunization()" [disabled]="isSyncing" title="Fetches the latest immunization and condition records from the State IIS. This may take a minute or two.">
-        <span *ngIf="isSyncing" class="spinner-inline"></span>
-        <span *ngIf="!isSyncing">Get Immunization Records (State IIS)</span>
-        <span *ngIf="isSyncing">Syncing...</span>
+      <button class="update-btn" (click)="updateImmunization()" [disabled]="isSyncing || isImporting" title="Fetches the latest immunization and condition records from the State IIS. This may take a minute or two.">
+        <span *ngIf="isSyncing || isImporting" class="spinner-inline"></span>
+        <span *ngIf="!isSyncing && !isImporting">Get Immunization Records (State IIS)</span>
+        <span *ngIf="isSyncing && !isImporting">Syncing...</span>
+        <span *ngIf="isImporting">Importing...</span>
       </button>
       <button class="update-btn" (click)="updateAllAllergies()" [disabled]="isSyncingAllergies">
         <span *ngIf="isSyncingAllergies" class="spinner-inline"></span>
@@ -38,7 +41,7 @@
     </div>
 
   </div>
-  <div *ngIf="loading">Loading patients...</div>
+  <div *ngIf="loading" class="no-patients-message">Loading patients...</div>
   <div *ngIf="error" class="error">{{ error }}</div>
   <div class="card-grid" *ngIf="!loading && !error && paginatedPatients.length > 0">
     <div class="patient-card" *ngFor="let patient of paginatedPatients; let i = index" (click)="goToPatient(patient.id)">

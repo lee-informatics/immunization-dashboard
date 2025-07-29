@@ -1,11 +1,11 @@
 body, .patient-list-bg {
-  background: #f7f9fb;
+  background: #F8FAFC;
   min-height: 100vh;
 }
 
 .patient-list-container {
   padding: 2.5rem 4vw 2rem 4vw;
-  background: #f7f9fb;
+  background: #F8FAFC;
   min-height: 100vh;
 }
 
@@ -24,9 +24,9 @@ body, .patient-list-bg {
 .search-bar input, .filters select {
   padding: 0.5rem 1rem;
   font-size: 1rem;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  background: #fafbfc;
+  border: 1px solid #E7EDF4;
+  border-radius: 500px;
+  background: #E7EDF4;
   min-width: 180px;
   margin-right: 0.5rem;
 }
@@ -34,17 +34,17 @@ body, .patient-list-bg {
 .filters input[type="text"] {
   padding: 0.5rem 1rem 0.5rem 2.5rem;
   font-size: 1.08rem;
-  border: 1.5px solid #e0e0e0;
-  border-radius: 999px;
-  background: #fff url('data:image/svg+xml;utf8,<svg fill="%23999" height="18" viewBox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99c.41.41 1.09.41 1.5 0s.41-1.09 0-1.5l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>') no-repeat 0.9em center;
-  box-shadow: 0 1px 4px rgba(44, 62, 80, 0.04);
+  border: 1.5px solid #E7EDF4;
+  border-radius: 10px;
+  background: #E7EDF4 url('data:image/svg+xml;utf8,<svg fill="%23999" height="18" viewBox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99c.41.41 1.09.41 1.5 0s.41-1.09 0-1.5l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>') no-repeat 0.9em center;
+  box-shadow: none;
   width: 270px;
   max-width: 100%;
   transition: border 0.2s, box-shadow 0.2s;
 }
 .filters input[type="text"]:focus {
-  border: 1.5px solid #2D3E50;
-  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.10);
+  border: 1.5px solid #E7EDF4;
+  // box-shadow: 0 2px 8px rgba(44, 62, 80, 0.10);
   outline: none;
   background-color: #fff;
 }
@@ -53,9 +53,8 @@ body, .patient-list-bg {
   position: sticky;
   top: 40px;
   z-index: 100;
-  background: #fff;
+  background: transparent;
   border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.06);
   padding: 1.2rem 2rem;
   margin-bottom: 1.5rem;
   display: flex;

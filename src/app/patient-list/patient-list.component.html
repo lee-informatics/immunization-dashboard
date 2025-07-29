@@ -1,6 +1,6 @@
-<div class="patient-list-container">
+<div class="patient-list-container" style='font-family: Inter, "Noto Sans", sans-serif;'>
   <div class="top-bar">
-    <h2>Patient List</h2>
+    <h2><b>Patients</b></h2>
     <div class="update-btns-col">
       <div class="button-row-vertical">
       </div>
@@ -18,11 +18,11 @@
       placeholder="Search by Name"
     />
     <select [(ngModel)]="genderFilter" (ngModelChange)="currentPage = 1">
-      <option value="">All Genders</option>
+      <option value="">Genders</option>
       <option *ngFor="let g of genderOptions" [value]="g">{{ g | titlecase }}</option>
     </select>
     <select [(ngModel)]="birthPlaceFilter" (ngModelChange)="currentPage = 1">
-      <option value="">All Birthplaces</option>
+      <option value="">Birthplaces</option>
       <option *ngFor="let bp of birthPlaceOptions" [value]="bp">{{ bp }}</option>
     </select>
     <div class="flex-spacer"></div>

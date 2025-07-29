@@ -8,6 +8,7 @@ import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { BrowserModule } from '@angular/platform-browser';
+import { TOAST_TIMEOUT } from './constants';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -17,7 +18,15 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withInterceptorsFromDi()),
     provideAnimations(),
-    provideToastr({ positionClass: 'toast-top-right' }),
+    provideToastr({ 
+      positionClass: 'toast-top-right',
+      timeOut: TOAST_TIMEOUT,
+      extendedTimeOut: 100,
+      progressBar: true,
+      closeButton: true,
+      enableHtml: true,
+      newestOnTop: true
+    }),
     SettingsService
   ]
 };

@@ -2,6 +2,17 @@
   <div class="navbar-left">
     <a class="navbar-title clickable" [routerLink]="['/']">Immunization Dashboard</a>
     <a class="navbar-link clickable" [routerLink]="['/']" routerLinkActive="active">Browser</a>
+    <!-- Dev dropdown - only visible in developer mode -->
+    <div *ngIf="developerMode" class="navbar-link dropdown dev-dropdown">
+      <span class="dev-icon">Developer Settings</span>
+      <div class="dropdown-content dev-dropdown-content">
+        <a (click)="clearClientCache()" class="dev-action">Clear Client Cache</a>
+        <a (click)="clearServerCache()" class="dev-action">Clear Server Cache</a>
+        <a (click)="clearBothCaches()" class="dev-action">Clear All Cache</a>
+        <a (click)="clearClientSettings()" class="dev-action">Clear Client Settings</a>
+        <a (click)="resetDashboard()" class="dev-action dev-action-danger">Reset Dashboard</a>
+      </div>
+    </div>
     <!-- <a class="navbar-link clickable" [routerLink]="['/builder']" routerLinkActive="active">Builder</a> -->
   </div>
   <div class="navbar-right">
@@ -20,6 +31,37 @@
     </div>
     <a class="navbar-link clickable" [routerLink]="['/settings']" routerLinkActive="active">Settings</a>
     <a class="navbar-link clickable" href="https://www.github.com/lee-informatics/immunization-dashboard/issues" target="_blank">Leave Feedback</a>
-    <button *ngIf="developerMode" class="navbar-link clickable" (click)="clearCache()" style="background:none;border:none;padding:0;margin-left:1rem;color:inherit;">Clear Cache</button>
   </div>
 </nav>
+
+<!-- Notification overlay -->
+<div *ngIf="notification.show" class="notification-overlay">
+  <div class="notification" [ngClass]="'notification-' + notification.type">
+    <span class="notification-message">{{ notification.message }}</span>
+  </div>
+</div>
+
+<!-- Reset confirmation popup -->
+<div *ngIf="showResetPopup" class="popup-overlay">
+  <div class="reset-popup">
+    <div class="reset-popup-header">
+      <h3>Reset Dashboard</h3>
+    </div>
+    <div class="reset-popup-content">
+      <p>This will permanently delete all data from the dashboard:</p>
+      <ul>
+        <li>All saved settings</li>
+        <li>All saved data</li>
+        <li>All FHIR data</li>
+        <li>All bulk exports</li>
+        <li>All bulk imports</li>
+      </ul>
+      <p class="reset-warning">This action cannot be undone.</p>
+      <p>Are you sure you want to continue?</p>
+    </div>
+    <div class="reset-popup-actions">
+      <button class="reset-btn-cancel" (click)="cancelReset()">Cancel</button>
+      <button class="reset-btn-confirm" (click)="confirmReset()">Reset Dashboard</button>
+    </div>
+  </div>
+</div>

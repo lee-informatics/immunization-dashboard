@@ -28,7 +28,7 @@ export class SettingsComponent implements OnInit {
 
   save() {
     this.settingsService.saveSettings();
-    this.toastrService.success("Settings are local to your browser only.", "Settings Saved")
+    this.toastrService.success("Settings saved to client.", "Settings Saved")
   }
 
   restore() {

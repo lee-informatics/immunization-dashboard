@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { PatientService } from '../service/patient.service';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { TOAST_TIMEOUT } from '../constants';
 
 @Component({
   selector: 'app-patient-list',
@@ -79,16 +80,16 @@ export class PatientListComponent implements OnInit, OnDestroy {
     });
     
     // Subscribe to service state for immunization processing
-    const immunizationSub = this.patientService.isSyncing$.subscribe(isSyncing => this.isSyncing = isSyncing);
-    const immunizationDoneSub = this.patientService.isDone$.subscribe(isDone => this.isDone = isDone);
-    const immunizationNotifSub = this.patientService.showExportNotif$.subscribe(showNotif => this.showExportNotif = showNotif);
-    const immunizationDateSub = this.patientService.lastExportDate$.subscribe(date => this.lastExportDate = date);
+    const immunizationSub = this.patientService.isSyncing$.subscribe((isSyncing: boolean) => this.isSyncing = isSyncing);
+    const immunizationDoneSub = this.patientService.isDone$.subscribe((isDone: boolean) => this.isDone = isDone);
+    const immunizationNotifSub = this.patientService.showExportNotif$.subscribe((showNotif: boolean) => this.showExportNotif = showNotif);
+    const immunizationDateSub = this.patientService.lastExportDate$.subscribe((date: string | null) => this.lastExportDate = date);
     
     // Subscribe to service state for import processing
-    const importSub = this.patientService.isImporting$.subscribe(isImporting => this.isImporting = isImporting);
-    const importStatusSub = this.patientService.importStatus$.subscribe(status => this.importStatus = status);
-    const importNotifSub = this.patientService.showImportNotif$.subscribe(showNotif => this.showImportNotif = showNotif);
-    const importDateSub = this.patientService.lastImportDate$.subscribe(date => this.lastImportDate = date);
+    const importSub = this.patientService.isImporting$.subscribe((isImporting: boolean) => this.isImporting = isImporting);
+    const importStatusSub = this.patientService.importStatus$.subscribe((status: string) => this.importStatus = status);
+    const importNotifSub = this.patientService.showImportNotif$.subscribe((showNotif: boolean) => this.showImportNotif = showNotif);
+    const importDateSub = this.patientService.lastImportDate$.subscribe((date: string | null) => this.lastImportDate = date);
     
     this.subscriptions.push(immunizationSub, immunizationDoneSub, immunizationNotifSub, immunizationDateSub, 
                            importSub, importStatusSub, importNotifSub, importDateSub);
@@ -155,13 +156,13 @@ export class PatientListComponent implements OnInit, OnDestroy {
       this.lastAllergyExportDate = new Date().toLocaleString();
       localStorage.setItem('lastAllergyExportDate', this.lastAllergyExportDate);
       this.showAllergyExportNotif = true;
-      setTimeout(() => { this.showAllergyExportNotif = false; }, 3000);
+      setTimeout(() => { this.showAllergyExportNotif = false; }, TOAST_TIMEOUT);
     } catch (err) {
       // Optionally, handle error (e.g., show error notification)
     }
     this.isSyncingAllergies = false;
     this.isAllergyDone = true;
-    setTimeout(() => { this.isAllergyDone = false; }, 3000);
+    setTimeout(() => { this.isAllergyDone = false; }, TOAST_TIMEOUT);
   }
 
   ngOnDestroy() {

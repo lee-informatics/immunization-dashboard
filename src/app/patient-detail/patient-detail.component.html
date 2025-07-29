@@ -14,6 +14,9 @@
         </div>
       </div>
     </div>
+    <div class="refresh-section">
+      <button (click)="refreshAllData()" class="refresh-btn">Refresh All Data</button>
+    </div>
   </div>
 
   <div *ngIf="loadingPatient" class="no-data">Loading patient data...</div>
@@ -73,7 +76,10 @@
 
   <div class="section-block">
     <div class="section-title">Immunization Records</div>
-    <table *ngIf="immunizations.length > 0">
+    <button (click)="fetchImmunizations()" [disabled]="loadingImmunizations" class="allergy-btn">Refresh Immunization Records</button>
+    <div *ngIf="loadingImmunizations" class="no-data">Loading immunization records...</div>
+    <div *ngIf="immunizationError" class="no-data" style="color: #b23b3b;">Error: {{ immunizationError }}</div>
+    <table *ngIf="!loadingImmunizations && !immunizationError && immunizations.length > 0">
       <thead>
         <tr>
           <th (click)="setImmunSort('occurrenceDateTime')">
@@ -99,12 +105,15 @@
         </tr>
       </tbody>
     </table>
-    <div *ngIf="immunizations.length === 0" class="no-patients-message">No immunization records found.</div>
+    <div *ngIf="!loadingImmunizations && !immunizationError && immunizations.length === 0" class="no-patients-message">No immunization records found.</div>
   </div>
 
   <div class="section-block">
     <div class="section-title">Conditions</div>
-    <table *ngIf="conditions.length > 0">
+    <button (click)="fetchConditions()" [disabled]="loadingConditions" class="allergy-btn">Refresh Condition Records</button>
+    <div *ngIf="loadingConditions" class="no-data">Loading condition records...</div>
+    <div *ngIf="conditionError" class="no-data" style="color: #b23b3b;">Error: {{ conditionError }}</div>
+    <table *ngIf="!loadingConditions && !conditionError && conditions.length > 0">
       <thead>
         <tr>
           <th (click)="setCondSort('onsetDateTime')">
@@ -126,7 +135,7 @@
         </tr>
       </tbody>
     </table>
-    <div *ngIf="conditions.length === 0" class="no-patients-message">No condition records found.</div>
+    <div *ngIf="!loadingConditions && !conditionError && conditions.length === 0" class="no-patients-message">No condition records found.</div>
   </div>
 
   <div class="section-block">

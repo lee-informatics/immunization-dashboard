@@ -36,6 +36,12 @@ export class PatientListComponent implements OnInit, OnDestroy {
   showExportNotif: boolean = false;
   lastExportDate: string | null = null;
 
+  // Import state
+  isImporting: boolean = false;
+  importStatus: string = 'IDLE';
+  showImportNotif: boolean = false;
+  lastImportDate: string | null = null;
+
   // Allergy state
   isSyncingAllergies: boolean = false;
   isAllergyDone: boolean = false;
@@ -58,10 +64,17 @@ export class PatientListComponent implements OnInit, OnDestroy {
         this.patients = data;
         (window as any).allPatients = data;
         this.loading = false;
+        this.error = null; // Clear any previous errors
       },
       error: (err) => {
-        this.error = 'Failed to load patients.';
+
+        this.patients = [];
+        (window as any).allPatients = [];
         this.loading = false;
+        this.error = null; // Don't set error message, let the template show "No patient data found"
+        
+        // Log the error for debugging purposes
+        console.error('Failed to load patients:', err);
       }
     });
     
@@ -70,7 +83,15 @@ export class PatientListComponent implements OnInit, OnDestroy {
     const immunizationDoneSub = this.patientService.isDone$.subscribe(isDone => this.isDone = isDone);
     const immunizationNotifSub = this.patientService.showExportNotif$.subscribe(showNotif => this.showExportNotif = showNotif);
     const immunizationDateSub = this.patientService.lastExportDate$.subscribe(date => this.lastExportDate = date);
-    this.subscriptions.push(immunizationSub, immunizationDoneSub, immunizationNotifSub, immunizationDateSub);
+    
+    // Subscribe to service state for import processing
+    const importSub = this.patientService.isImporting$.subscribe(isImporting => this.isImporting = isImporting);
+    const importStatusSub = this.patientService.importStatus$.subscribe(status => this.importStatus = status);
+    const importNotifSub = this.patientService.showImportNotif$.subscribe(showNotif => this.showImportNotif = showNotif);
+    const importDateSub = this.patientService.lastImportDate$.subscribe(date => this.lastImportDate = date);
+    
+    this.subscriptions.push(immunizationSub, immunizationDoneSub, immunizationNotifSub, immunizationDateSub, 
+                           importSub, importStatusSub, importNotifSub, importDateSub);
     
     this.lastAllergyExportDate = localStorage.getItem('lastAllergyExportDate');
   }

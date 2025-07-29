@@ -8,6 +8,23 @@ export class AdministerService {
 
   constructor(private http: HttpClient, private toastr: ToastrService) {}
 
+  // Clear frontend cache and trigger data refresh
+  clearCacheAndRefresh(): void {
+    // Clear localStorage cache
+    localStorage.removeItem('grouped_patient_data');
+    localStorage.removeItem('immunization_condition_binary_ids');
+    
+    // Clear server-side cache by calling the cache clear endpoint
+    this.http.delete(`${this.SERVER_URL}/api/cache`).subscribe({
+      next: () => {
+        console.log('[DEBUG] Server cache cleared successfully');
+      },
+      error: (err) => {
+        console.error('[DEBUG] Failed to clear server cache:', err);
+      }
+    });
+  }
+
   administerImmunizations(patientId: string, selectedImmunizations: string[], practitioner: any, immunizationList: any[]): Promise<any[]> {
     const requests = selectedImmunizations.map(id => {
       const imm = immunizationList.find((i: any) => i.id === id);
@@ -31,7 +48,12 @@ export class AdministerService {
       };
       return this.http.post(`${this.SERVER_URL}/api/administer/immunization`, immunizationResource).toPromise();
     });
-    return Promise.all(requests);
+    
+    return Promise.all(requests).then(results => {
+      // Clear cache and refresh data after successful administration
+      this.clearCacheAndRefresh();
+      return results;
+    });
   }
 
   administerMedications(patientId: string, selectedMedications: string[], practitioner: any, medicationList: any[]): Promise<any[]> {
@@ -64,7 +86,12 @@ export class AdministerService {
       };
       return this.http.post(`${this.SERVER_URL}/api/administer/medication`, medicationResource).toPromise();
     });
-    return Promise.all(requests);
+    
+    return Promise.all(requests).then(results => {
+      // Clear cache and refresh data after successful administration
+      this.clearCacheAndRefresh();
+      return results;
+    });
   }
 
   showSuccess(message: string): void {

@@ -1,6 +1,10 @@
 # Immunization Dashboard
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.1.1.
+This is a frontend-only proof of concept (POC) web client UI for the Immunization Dashboard example project. It requires a backend server and associated service dependencies. The following default environment variables should be overriden as necessary for your environment.
+
+```sh
+IMMUNIZATION_SERVER_URL=//localhost:3000
+```
 
 ## Development server
 
@@ -25,10 +29,6 @@ docker run -p 4200:80 immunization-dashboard
 ```
 
 Open your browser and navigate to `http://localhost:4200/`.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
 
 # License
 

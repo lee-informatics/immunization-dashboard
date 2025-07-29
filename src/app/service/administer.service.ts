@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ToastrService } from 'ngx-toastr';
+import { SettingsService } from '../settings/settings.service';
+import { DataApiService } from './data-api.service';
 
 @Injectable({ providedIn: 'root' })
 export class AdministerService {
-  private SERVER_URL = (window as any)["SERVER_URL"] || '';
 
-  constructor(private http: HttpClient, private toastr: ToastrService) {}
+  constructor(protected settingsService: SettingsService, protected dataApiService: DataApiService, private http: HttpClient, private toastr: ToastrService) {}
 
   administerImmunizations(patientId: string, selectedImmunizations: string[], practitioner: any, immunizationList: any[]): Promise<any[]> {
     const requests = selectedImmunizations.map(id => {
@@ -29,7 +30,7 @@ export class AdministerService {
         primarySource: true,
         lotNumber: Math.random().toString(36).substring(2, 10)
       };
-      return this.http.post(`${this.SERVER_URL}/api/administer/immunization`, immunizationResource).toPromise();
+      return this.http.post(`${this.dataApiService.serverURL}/api/administer/immunization`, immunizationResource).toPromise();
     });
     return Promise.all(requests);
   }
@@ -62,7 +63,7 @@ export class AdministerService {
         }] : undefined,
         dosage: med.dosage || undefined
       };
-      return this.http.post(`${this.SERVER_URL}/api/administer/medication`, medicationResource).toPromise();
+      return this.http.post(`${this.dataApiService.serverURL}/api/administer/medication`, medicationResource).toPromise();
     });
     return Promise.all(requests);
   }

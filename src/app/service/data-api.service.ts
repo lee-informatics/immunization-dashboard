@@ -6,19 +6,26 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class DataApiService {
-    private SERVER_URL = (window as any)["SERVER_URL"] || '';
 
-    constructor(private http: HttpClient) {}
+  public serverURL = (window as any)["IMMUNIZATION_SERVER_URL"];
+
+  constructor(private http: HttpClient) { 
+    if (this.serverURL) {
+      console.log(`DataApiService initialized with server URL: ${this.serverURL}`);
+    } else {
+      console.warn('IMMUNIZATION_SERVER_URL is not set. This will likely prevent the application from functioning correctly.');
+    }
+  }
 
   getActiveVaccines(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.SERVER_URL}/api/active-vaccines`);
+    return this.http.get<any[]>(`${this.serverURL}/api/active-vaccines`);
   }
 
   getMedications(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.SERVER_URL}/api/medications`);
+    return this.http.get<any[]>(`${this.serverURL}/api/medications`);
   }
 
   getPractitioners(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.SERVER_URL}/api/practitioners`);
+    return this.http.get<any[]>(`${this.serverURL}/api/practitioners`);
   }
 } 

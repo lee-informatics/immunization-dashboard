@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, map, switchMap, timer, throwError, BehaviorSubject } from 'rxjs';
-import { catchError, filter, take, map as rxMap } from 'rxjs/operators';
+import { Observable, timer, switchMap, map, filter, take, catchError, throwError, BehaviorSubject, firstValueFrom } from 'rxjs';
+import { map as rxMap } from 'rxjs/operators';
 import { ToastrService } from 'ngx-toastr';
 import { DataApiService } from './data-api.service';
+import { TOAST_TIMEOUT } from '../constants';
 
 interface ImportJob {
   importJobId: string;
@@ -54,12 +55,12 @@ export class PatientService {
   // Public methods for component interaction
   showNotification(): void {
     this._showExportNotif.next(true);
-    setTimeout(() => { this._showExportNotif.next(false); }, 3000);
+    setTimeout(() => { this._showExportNotif.next(false); }, TOAST_TIMEOUT);
   }
 
   showImportNotification(): void {
     this._showImportNotif.next(true);
-    setTimeout(() => { this._showImportNotif.next(false); }, 3000);
+    setTimeout(() => { this._showImportNotif.next(false); }, TOAST_TIMEOUT);
   }
 
   updateLastExportDate(): void {
@@ -79,8 +80,9 @@ export class PatientService {
       map(bundle => bundle.entry ? bundle.entry.map((e: any) => e.resource) : []),
       catchError(err => {
         console.error('[PatientService] Error fetching patients:', err);
-        const errorMessage = err.error?.error || err.error?.details || err.message || 'Failed to fetch patients';
-        this.toastr.error(errorMessage, 'Connection Error');
+        const detailedError = err.error?.error || err.error?.details || err.message || 'Failed to fetch patients';
+        console.error('[PatientService] Detailed patients error:', detailedError);
+        this.toastr.error('Failed to fetch patients', 'Connection Error');
         throw err;
       })
     );
@@ -99,8 +101,9 @@ export class PatientService {
       }),
       catchError(err => {
         console.error('[PatientService] Error starting export job:', err);
-        const errorMessage = err.error?.error || err.error?.details || err.message || 'Failed to start export job';
-        this.toastr.error(errorMessage, 'Export Error');
+        const detailedError = err.error?.error || err.error?.details || err.message || 'Failed to start export job';
+        console.error('[PatientService] Detailed export job error:', detailedError);
+        this.toastr.error('Failed to start export', 'Export Error');
         throw err;
       })
     );
@@ -117,15 +120,18 @@ export class PatientService {
           // Done!
           return res.body;
         } else {
-          throw new Error('Export failed or returned unexpected status: ' + res.status);
+          const detailedError = 'Export failed or returned unexpected status: ' + res.status;
+          console.error('[PatientService] Detailed export error:', detailedError, 'Response:', res);
+          throw new Error('Export failed');
         }
       }),
       filter(result => result !== null), // Only emit when done
       take(1), // Complete after first 200 response
       catchError(err => {
         console.error('[PatientService] Error polling export status:', err);
-        const errorMessage = err.error?.error || err.error?.details || err.message || 'Failed to check export status';
-        this.toastr.error(errorMessage, 'Export Error');
+        const detailedError = err.error?.error || err.error?.details || err.message || 'Failed to check export status';
+        console.error('[PatientService] Detailed error details:', detailedError);
+        this.toastr.error('Export failed', 'Export Error');
         throw err;
       })
     );
@@ -149,13 +155,17 @@ export class PatientService {
             return importJob;
           } else if (importJob.status === 'FAILED') {
             // Import failed
-            throw new Error('Import failed: ' + (importJob.error || 'Unknown error'));
+            const detailedError = 'Import failed: ' + (importJob.error || 'Unknown error');
+            console.error('[PatientService] Detailed import error:', detailedError, 'ImportJob:', importJob);
+            throw new Error('Import failed');
           } else {
             // No import job found or other status
             return null;
           }
         } else {
-          throw new Error('Failed to get import status: ' + res.status);
+          const detailedError = 'Failed to get import status: ' + res.status;
+          console.error('[PatientService] Detailed import status error:', detailedError, 'Response:', res);
+          throw new Error('Import status check failed');
         }
       }),
       filter((result): result is ImportJob => result !== null), // Only emit when done
@@ -193,8 +203,9 @@ export class PatientService {
     return this.http.get<any[]>(url).pipe(
       catchError(err => {
         console.error('[PatientService] Error fetching allergies:', err);
-        const errorMessage = err.error?.error || err.error?.details || err.message || 'Failed to fetch allergies';
-        this.toastr.error(errorMessage, 'Allergies Error');
+        const detailedError = err.error?.error || err.error?.details || err.message || 'Failed to fetch allergies';
+        console.error('[PatientService] Detailed allergies error:', detailedError);
+        this.toastr.error('Failed to fetch allergies', 'Allergies Error');
         throw err;
       })
     );
@@ -207,8 +218,9 @@ export class PatientService {
     return this.http.get<any[]>(url).pipe(
       catchError(err => {
         console.error('[PatientService] Error fetching conditions:', err);
-        const errorMessage = err.error?.error || err.error?.details || err.message || 'Failed to fetch conditions';
-        this.toastr.error(errorMessage, 'Conditions Error');
+        const detailedError = err.error?.error || err.error?.details || err.message || 'Failed to fetch conditions';
+        console.error('[PatientService] Detailed conditions error:', detailedError);
+        this.toastr.error('Failed to fetch conditions', 'Conditions Error');
         throw err;
       })
     );
@@ -221,8 +233,9 @@ export class PatientService {
     return this.http.get<any[]>(url).pipe(
       catchError(err => {
         console.error('[PatientService] Error fetching immunizations:', err);
-        const errorMessage = err.error?.error || err.error?.details || err.message || 'Failed to fetch immunizations';
-        this.toastr.error(errorMessage, 'Immunizations Error');
+        const detailedError = err.error?.error || err.error?.details || err.message || 'Failed to fetch immunizations';
+        console.error('[PatientService] Detailed immunizations error:', detailedError);
+        this.toastr.error('Failed to fetch immunizations', 'Immunizations Error');
         throw err;
       })
     );
@@ -232,8 +245,9 @@ export class PatientService {
     return this.http.get<any[]>(`${this.SERVER_URL}/api/conditions`).pipe(
       catchError(err => {
         console.error('[PatientService] Error fetching all conditions:', err);
-        const errorMessage = err.error?.error || err.error?.details || err.message || 'Failed to fetch conditions';
-        this.toastr.error(errorMessage, 'Conditions Error');
+        const detailedError = err.error?.error || err.error?.details || err.message || 'Failed to fetch conditions';
+        console.error('[PatientService] Detailed conditions error:', detailedError);
+        this.toastr.error('Failed to fetch conditions', 'Conditions Error');
         throw err;
       })
     );
@@ -243,8 +257,9 @@ export class PatientService {
     return this.http.get<any[]>(`${this.SERVER_URL}/api/immunizations`).pipe(
       catchError(err => {
         console.error('[PatientService] Error fetching all immunizations:', err);
-        const errorMessage = err.error?.error || err.error?.details || err.message || 'Failed to fetch immunizations';
-        this.toastr.error(errorMessage, 'Immunizations Error');
+        const detailedError = err.error?.error || err.error?.details || err.message || 'Failed to fetch immunizations';
+        console.error('[PatientService] Detailed immunizations error:', detailedError);
+        this.toastr.error('Failed to fetch immunizations', 'Immunizations Error');
         throw err;
       })
     );
@@ -254,8 +269,9 @@ export class PatientService {
     return this.http.get<any[]>(`${this.SERVER_URL}/api/allergies`).pipe(
       catchError(err => {
         console.error('[PatientService] Error fetching all allergies:', err);
-        const errorMessage = err.error?.error || err.error?.details || err.message || 'Failed to fetch allergies';
-        this.toastr.error(errorMessage, 'Allergies Error');
+        const detailedError = err.error?.error || err.error?.details || err.message || 'Failed to fetch allergies';
+        console.error('[PatientService] Detailed allergies error:', detailedError);
+        this.toastr.error('Failed to fetch allergies', 'Allergies Error');
         throw err;
       })
     );
@@ -311,7 +327,7 @@ export class PatientService {
             this._isSyncing.next(false);
             this._isDone.next(true);
             this._showExportNotif.next(true);
-            setTimeout(() => { this._showExportNotif.next(false); }, 3000);
+            setTimeout(() => { this._showExportNotif.next(false); }, TOAST_TIMEOUT);
             const exportDate = new Date().toLocaleString();
             this._lastExportDate.next(exportDate);
             localStorage.setItem('lastExportDate', exportDate);
@@ -338,14 +354,16 @@ export class PatientService {
           error: (err) => {
             this._isSyncing.next(false);
             this._isDone.next(false);
-            this.toastr.error('Export failed: ' + (err?.message || err));
+            console.error('[PatientService] Detailed export error:', err);
+            this.toastr.error('Export failed', 'Export Error');
           }
         });
       },
       error: (err) => {
         this._isSyncing.next(false);
         this._isDone.next(false);
-        this.toastr.error('Export failed: ' + (err?.message || err));
+        console.error('[PatientService] Detailed export job error:', err);
+        this.toastr.error('Export failed', 'Export Error');
       }
     });
   }
@@ -355,7 +373,7 @@ export class PatientService {
     
     this._isImporting.next(true);
     this._importStatus.next('IN_PROGRESS');
-    this.toastr.info('Export completed. Import process has started...', 'Import Started');
+    this.toastr.info('Export completed. Starting Import...');
     
     // Wait a bit for the import to start, then start polling
     setTimeout(() => {
@@ -366,7 +384,7 @@ export class PatientService {
           this._showImportNotif.next(true);
           this.updateLastImportDate();
           this.toastr.success('Import completed successfully! Refreshing page...', 'Import Complete');
-          setTimeout(() => { this._showImportNotif.next(false); }, 3000);
+          setTimeout(() => { this._showImportNotif.next(false); }, TOAST_TIMEOUT);
           setTimeout(() => { this._importStatus.next('IDLE'); }, 5000);
           
           // Automatically refresh the page after import completion
@@ -377,7 +395,8 @@ export class PatientService {
         error: (err) => {
           this._isImporting.next(false);
           this._importStatus.next('FAILED');
-          this.toastr.error('Import failed: ' + (err?.message || err), 'Import Failed');
+          console.error('[PatientService] Detailed import error:', err);
+          this.toastr.error('Import failed', 'Import Failed');
           setTimeout(() => { this._importStatus.next('IDLE'); }, 5000);
         }
       });
@@ -462,6 +481,65 @@ export class PatientService {
           finish();
         }
       });
+    }
+  }
+
+  async clearBothCaches() {
+    try {
+      // Store settings before clearing
+      const settings = localStorage.getItem('settings');
+      const settingsForceReset = localStorage.getItem('settings_force_reset');
+      
+      // Clear server cache first
+      let serverSuccess = false;
+      try {
+        await firstValueFrom(this.http.delete(`${this.dataApiService.serverURL}/api/cache`));
+        console.log('Server cache cleared successfully');
+        this.toastr.success('Server cache cleared', 'Cache Cleared');
+        serverSuccess = true;
+      } catch (serverError) {
+        console.error('Failed to clear server cache:', serverError);
+        this.toastr.error('Failed to clear server cache', 'Server Cache Error');
+      }
+      
+      // Clear local cache
+      let clientSuccess = false;
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Restore settings
+        if (settings) {
+          localStorage.setItem('settings', settings);
+        }
+        if (settingsForceReset) {
+          localStorage.setItem('settings_force_reset', settingsForceReset);
+        }
+        
+        console.log('Client cache cleared successfully');
+        this.toastr.success('Client cache cleared', 'Cache Cleared');
+        clientSuccess = true;
+      } catch (clientError) {
+        console.error('Failed to clear client cache:', clientError);
+        this.toastr.error('Failed to clear client cache', 'Client Cache Error');
+      }
+      
+      // Show summary notification
+      if (serverSuccess && clientSuccess) {
+        this.toastr.success('All caches cleared successfully', 'Cache Cleared');
+      } else if (!serverSuccess && !clientSuccess) {
+        this.toastr.error('Failed to clear any caches', 'Cache Error');
+      }
+      
+      // Reload page if at least one cache was cleared
+      if (serverSuccess || clientSuccess) {
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Failed to clear caches:', error);
+      this.toastr.error('Failed to clear caches', 'Cache Error');
     }
   }
 } 

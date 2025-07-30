@@ -37,6 +37,17 @@
         <span *ngIf="isSyncingAllergies" class="spinner-inline"></span>
         Get Allergy Records (TEFCA QHIN)
       </button>
+      <!-- Developer mode direct import button -->
+      <button 
+        *ngIf="isDeveloperMode" 
+        class="update-btn developer-btn" 
+        (click)="startDirectImport()" 
+        [disabled]="isImporting"
+        title="Direct import - bypasses export step (Developer mode only)">
+        <span *ngIf="isImporting" class="spinner-inline"></span>
+        <span *ngIf="!isImporting">Direct Import (Dev)</span>
+        <span *ngIf="isImporting">Importing...</span>
+      </button>
     </div>
 
   </div>

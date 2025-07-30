@@ -20,6 +20,7 @@ export class NavbarComponent {
   developerMode = false;
   notification = { message: '', type: '', show: false };
   showResetPopup = false;
+  isResetting = false;
   
 
   constructor(
@@ -125,22 +126,30 @@ export class NavbarComponent {
 
   async confirmReset() {
     this.showResetPopup = false;
+    this.isResetting = true;
     
     try {
+      console.log('Starting dashboard reset...');
+      
       // Call the reset API
       await firstValueFrom(this.http.post(`${this.dataApiService.serverURL}/api/reset`, {}));
       console.log('Dashboard reset successfully');
-      this.showNotification('Dashboard reset successfully', 'success');
       
-      // Clear client cache and reload after a delay
+      // Clear client cache and reload
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Show success message briefly before reload
+      this.showNotification('Dashboard reset successfully. Reloading...', 'success');
+      
+      // Reload the page
       setTimeout(() => {
-        localStorage.clear();
-        sessionStorage.clear();
         window.location.reload();
-      }, 2000);
+      }, 1500);
     } catch (error) {
       console.error('Failed to reset dashboard:', error);
       this.showNotification('Failed to reset dashboard', 'error');
+      this.isResetting = false;
     }
   }
 

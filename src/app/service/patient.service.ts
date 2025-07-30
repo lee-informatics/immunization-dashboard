@@ -4,7 +4,7 @@ import { Observable, timer, switchMap, map, filter, take, catchError, throwError
 import { map as rxMap } from 'rxjs/operators';
 import { ToastrService } from 'ngx-toastr';
 import { DataApiService } from './data-api.service';
-import { TOAST_TIMEOUT } from '../constants';
+const TOAST_TIMEOUT = 1500;
 
 interface ImportJob {
   importJobId: string;

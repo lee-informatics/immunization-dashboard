@@ -6,7 +6,7 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { DataApiService } from '../service/data-api.service';
 import { PatientService } from '../service/patient.service';
-import { TOAST_TIMEOUT } from '../constants';
+const TOAST_TIMEOUT = 1500;
 
 @Component({
   selector: 'app-navbar',

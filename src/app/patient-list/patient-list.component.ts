@@ -5,7 +5,7 @@ import { PatientService } from '../service/patient.service';
 import { SettingsService } from '../settings/settings.service';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { TOAST_TIMEOUT } from '../constants';
+const TOAST_TIMEOUT = 1500;
 
 @Component({
   selector: 'app-patient-list',

@@ -10,7 +10,7 @@
           ID: {{ patient.id }}
           <span *ngIf="patient.birthDate"> | Birth Date: {{ patient.birthDate }}</span>
           <span *ngIf="getPatientAge() !== null"> | Age: {{ getPatientAge() }}</span>
-          <span *ngIf="patient.gender"> | Gender: {{ patient.gender | titlecase }}</span>
+          <span *ngIf="patient.gender"> | Sex: {{ patient.gender | titlecase }}</span>
         </div>
       </div>
     </div>

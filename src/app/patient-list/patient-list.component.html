@@ -18,7 +18,7 @@
       placeholder="Search by Name"
     />
     <select [(ngModel)]="genderFilter" (ngModelChange)="currentPage = 1">
-      <option value="">Genders</option>
+      <option value="">Sex</option>
       <option *ngFor="let g of genderOptions" [value]="g">{{ g | titlecase }}</option>
     </select>
     <select [(ngModel)]="birthPlaceFilter" (ngModelChange)="currentPage = 1">
@@ -37,17 +37,7 @@
         <span *ngIf="isSyncingAllergies" class="spinner-inline"></span>
         Get Allergy Records (TEFCA QHIN)
       </button>
-      <!-- Developer mode direct import button -->
-      <button 
-        *ngIf="isDeveloperMode" 
-        class="update-btn developer-btn" 
-        (click)="startDirectImport()" 
-        [disabled]="isImporting"
-        title="Direct import - bypasses export step (Developer mode only)">
-        <span *ngIf="isImporting" class="spinner-inline"></span>
-        <span *ngIf="!isImporting">Direct Import (Dev)</span>
-        <span *ngIf="isImporting">Importing...</span>
-      </button>
+
     </div>
 
   </div>
@@ -65,7 +55,7 @@
         </div>
       </div>
       <div class="patient-card-body">
-        <div><strong>Gender:</strong> {{ patient.gender ? (patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1)) : 'Unknown' }}</div>        <div><strong>Birth Date:</strong> {{ patient.birthDate || 'Unknown' }}</div>
+        <div><strong>Sex:</strong> {{ patient.gender ? (patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1)) : 'Unknown' }}</div>        <div><strong>Birth Date:</strong> {{ patient.birthDate || 'Unknown' }}</div>
         <div><strong>Birth Place:</strong> {{ getBirthPlace(patient) }}</div>
         <div><strong>Phone:</strong> {{ getPhone(patient) }}</div>
         <div><strong>Location:</strong> {{ patient.address?.[0]?.city || 'N/A' }}, {{ patient.address?.[0]?.state || 'N/A' }}</div>

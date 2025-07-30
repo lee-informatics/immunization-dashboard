@@ -362,4 +362,29 @@ body, .patient-list-bg {
   text-align: center;
   width: 100%;
   margin-top: 0.5em;
-} 
+}
+
+// Developer mode button styling
+.developer-btn {
+  background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+  border-color: #c0392b !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.developer-btn:hover {
+  background: linear-gradient(135deg, #c0392b, #a93226) !important;
+  border-color: #a93226 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+}
+
+.developer-btn:disabled {
+  background: linear-gradient(135deg, #bdc3c7, #95a5a6) !important;
+  border-color: #95a5a6 !important;
+  color: #7f8c8d !important;
+  transform: none;
+  box-shadow: none;
+}

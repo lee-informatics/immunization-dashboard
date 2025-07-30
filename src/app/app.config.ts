@@ -8,7 +8,7 @@ import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { BrowserModule } from '@angular/platform-browser';
-import { TOAST_TIMEOUT } from './constants';
+const TOAST_TIMEOUT = 1500;
 
 export const appConfig: ApplicationConfig = {
   providers: [

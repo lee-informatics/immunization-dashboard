@@ -116,7 +116,10 @@ export class AdministerComponent implements OnInit {
   }
 
   goBack() {
-    this.router.navigate(['/patient', this.patientId]);
+    // Navigate back with a refresh parameter to trigger data refresh
+    this.router.navigate(['/patient', this.patientId], { 
+      queryParams: { refresh: Date.now() } 
+    });
   }
 
   /**

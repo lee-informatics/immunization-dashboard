@@ -4,7 +4,7 @@ import { Observable, timer, switchMap, map, filter, take, catchError, throwError
 import { map as rxMap } from 'rxjs/operators';
 import { ToastrService } from 'ngx-toastr';
 import { DataApiService } from './data-api.service';
-import { TOAST_TIMEOUT } from '../constants';
+const TOAST_TIMEOUT = 1500;
 
 interface ImportJob {
   importJobId: string;
@@ -14,6 +14,17 @@ interface ImportJob {
   finishedAt?: string;
   error?: string;
   result?: any;
+}
+
+interface TransactionJob {
+  jobId: string;
+  status: 'IN_PROGRESS' | 'FINISHED' | 'FAILED';
+  createdAt: string;
+  completedAt?: string;
+  resourcesCount?: number;
+  result?: any;
+  error?: string;
+  type: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -169,6 +180,80 @@ export class PatientService {
         }
       }),
       filter((result): result is ImportJob => result !== null), // Only emit when done
+      take(1), // Complete after first successful response
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  startTransaction(): Observable<{ jobId: string; pollUrl: string }> {
+    console.log('[PatientService] Starting transaction, SERVER_URL:', this.SERVER_URL);
+    return this.http.post<any>(`${this.SERVER_URL}/api/transact`, {}, { observe: 'response' }).pipe(
+      map(res => {
+        console.log('[PatientService] Transaction response:', res);
+        if (res.status === 201) {
+          const { jobId, pollUrl } = res.body;
+          if (!jobId) throw new Error('No jobId returned from transaction start');
+          console.log('[PatientService] Transaction started successfully:', { jobId, pollUrl });
+          return { jobId, pollUrl };
+        } else {
+          console.error('[PatientService] Unexpected status code:', res.status);
+          throw new Error('Failed to start transaction');
+        }
+      }),
+      catchError(err => {
+        console.error('[PatientService] Error starting transaction:', err);
+        console.error('[PatientService] Error details:', {
+          status: err.status,
+          statusText: err.statusText,
+          error: err.error,
+          message: err.message
+        });
+        const detailedError = err.error?.error || err.error?.details || err.message || 'Failed to start transaction';
+        console.error('[PatientService] Detailed transaction start error:', detailedError);
+        this.toastr.error('Failed to start transaction', 'Transaction Error');
+        throw err;
+      })
+    );
+  }
+
+  pollTransactionStatus(jobId: string): Observable<TransactionJob> {
+    return timer(0, 5000).pipe(
+      switchMap(() => this.http.get(`${this.SERVER_URL}/api/transact/status`, { 
+        params: { jobId }, 
+        observe: 'response' 
+      })),
+      map(res => {
+        if (res.status === 200) {
+          const transactionJob = res.body as TransactionJob;
+          if (!transactionJob) {
+            // No transaction job found
+            return null;
+          }
+          if (transactionJob.status === 'IN_PROGRESS') {
+            // Still processing, keep polling
+            return null;
+          } else if (transactionJob.status === 'FINISHED') {
+            // Transaction completed!
+            return transactionJob;
+          } else if (transactionJob.status === 'FAILED') {
+            // Transaction failed
+            const detailedError = 'Transaction failed: ' + (transactionJob.error || 'Unknown error');
+            console.error('[PatientService] Detailed transaction error:', detailedError, 'TransactionJob:', transactionJob);
+            throw new Error('Transaction failed');
+          } else {
+            // No transaction job found or other status
+            return null;
+          }
+        } else if (res.status === 202) {
+          // Still processing, keep polling
+          return null;
+        } else {
+          const detailedError = 'Failed to get transaction status: ' + res.status;
+          console.error('[PatientService] Detailed transaction status error:', detailedError, 'Response:', res);
+          throw new Error('Transaction status check failed');
+        }
+      }),
+      filter((result): result is TransactionJob => result !== null), // Only emit when done
       take(1), // Complete after first successful response
       catchError(err => throwError(() => err))
     );
@@ -373,34 +458,46 @@ export class PatientService {
     
     this._isImporting.next(true);
     this._importStatus.next('IN_PROGRESS');
-    this.toastr.info('Export completed. Starting Import...');
+    this.toastr.info('Starting import...');
     
-    // Wait a bit for the import to start, then start polling
-    setTimeout(() => {
-      this.pollImportStatus().subscribe({
-        next: (importJob: ImportJob) => {
-          this._isImporting.next(false);
-          this._importStatus.next('COMPLETED');
-          this._showImportNotif.next(true);
-          this.updateLastImportDate();
-          this.toastr.success('Import completed successfully! Refreshing page...', 'Import Complete');
-          setTimeout(() => { this._showImportNotif.next(false); }, TOAST_TIMEOUT);
-          setTimeout(() => { this._importStatus.next('IDLE'); }, 5000);
-          
-          // Automatically refresh the page after import completion
-          setTimeout(() => {
-            this.refreshPage();
-          }, 2000); // Wait 2 seconds before refreshing
-        },
-        error: (err) => {
-          this._isImporting.next(false);
-          this._importStatus.next('FAILED');
-          console.error('[PatientService] Detailed import error:', err);
-          this.toastr.error('Import failed', 'Import Failed');
-          setTimeout(() => { this._importStatus.next('IDLE'); }, 5000);
-        }
-      });
-    }, 2000); // Wait 2 seconds for import to start
+    // Start the transaction and then poll for status
+    this.startTransaction().subscribe({
+      next: ({ jobId, pollUrl }) => {
+        console.log(`[PatientService] Transaction started with jobId: ${jobId}, pollUrl: ${pollUrl}`);
+        
+        // Start polling the specific job
+        this.pollTransactionStatus(jobId).subscribe({
+          next: (transactionJob: TransactionJob) => {
+            this._isImporting.next(false);
+            this._importStatus.next('COMPLETED');
+            this._showImportNotif.next(true);
+            this.updateLastImportDate();
+            this.toastr.success("Import Complete, refreshing page.");
+            setTimeout(() => { this._showImportNotif.next(false); }, TOAST_TIMEOUT);
+            setTimeout(() => { this._importStatus.next('IDLE'); }, 5000);
+            
+            // Automatically refresh the page after transaction completion
+            setTimeout(() => {
+              this.refreshPage();
+            }, 2000); // Wait 2 seconds before refreshing
+          },
+          error: (err) => {
+            this._isImporting.next(false);
+            this._importStatus.next('FAILED');
+            console.error('[PatientService] Detailed transaction error:', err);
+            this.toastr.error('Transaction failed', 'Transaction Failed');
+            setTimeout(() => { this._importStatus.next('IDLE'); }, 5000);
+          }
+        });
+      },
+      error: (err) => {
+        this._isImporting.next(false);
+        this._importStatus.next('FAILED');
+        console.error('[PatientService] Error starting transaction:', err);
+        this.toastr.error('Failed to start transaction', 'Transaction Error');
+        setTimeout(() => { this._importStatus.next('IDLE'); }, 5000);
+      }
+    });
   }
 
   private refreshPage(): void {

@@ -1,9 +1,10 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PatientService } from '../service/patient.service';
 import { Subscription } from 'rxjs';
+import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-patient-detail',
@@ -37,6 +38,7 @@ export class PatientDetailComponent implements OnInit, OnDestroy {
   condFilters: { [key: string]: string } = {};
 
   private routeSubscription?: Subscription;
+  private navigationSubscription?: Subscription;
 
   constructor(private route: ActivatedRoute, private router: Router, private datePipe: DatePipe, private patientService: PatientService) {}
 
@@ -54,12 +56,38 @@ export class PatientDetailComponent implements OnInit, OnDestroy {
       }
     });
     
+    // Subscribe to query parameter changes to detect refresh requests
+    this.route.queryParams.subscribe(queryParams => {
+      if (queryParams['refresh']) {
+        console.log('[DEBUG] Refresh parameter detected, refreshing data');
+        this.refreshAllData();
+      }
+    });
+    
+    // Subscribe to navigation events to refresh data when returning from administer
+    this.navigationSubscription = this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe((event: any) => {
+      console.log('[DEBUG] Navigation event detected:', event.url);
+      // Check if we're navigating to this patient detail page from administer
+      if (event.url.includes(`/patient/${this.patientId}`) && !event.url.includes('/administer')) {
+        console.log('[DEBUG] Navigation detected to patient detail, refreshing data');
+        // Add a small delay to ensure the component is fully loaded
+        setTimeout(() => {
+          this.refreshAllData();
+        }, 100);
+      }
+    });
+    
     this.loadPatientData();
   }
 
   ngOnDestroy() {
     if (this.routeSubscription) {
       this.routeSubscription.unsubscribe();
+    }
+    if (this.navigationSubscription) {
+      this.navigationSubscription.unsubscribe();
     }
   }
 
@@ -102,8 +130,10 @@ export class PatientDetailComponent implements OnInit, OnDestroy {
 
   // Refresh all patient data (called after administration)
   refreshAllData() {
-    console.log('[DEBUG] Refreshing all patient data');
-    this.patientService.refreshPatientDetailData(this.patientId);
+    console.log('[DEBUG] Refreshing all patient data for patient:', this.patientId);
+    // Clear any cached data first
+    this.patientService.clearCacheAndRefresh();
+    // Fetch fresh data
     this.fetchImmunizations();
     this.fetchConditions();
     this.fetchAllergies();
@@ -332,7 +362,7 @@ export class PatientDetailComponent implements OnInit, OnDestroy {
       { code: "03", display: "MMR (2-dose series by age 4–6)" },
       { code: "21", display: "Varicella (2-dose series by age 4–6)" },
       { code: "140", display: "Influenza, seasonal (annual)" },
-      { code: "92", display: "Sample Vaccine" }
+      // { code: "92", display: "Sample Vaccine" }
     ];
   }
 

@@ -57,6 +57,7 @@
         <li>All bulk imports</li>
       </ul>
       <p class="reset-warning">This action cannot be undone.</p>
+      <p><strong>Warning:</strong> This operation may take several minutes to complete.</p>
       <p>Are you sure you want to continue?</p>
     </div>
     <div class="reset-popup-actions">
@@ -64,4 +65,14 @@
       <button class="reset-btn-confirm" (click)="confirmReset()">Reset Dashboard</button>
     </div>
   </div>
+</div>
+
+<!-- Reset blocking overlay -->
+<div *ngIf="isResetting" class="reset-blocking-overlay">
+      <div class="reset-blocking-content">
+      <div class="reset-spinner"></div>
+      <h3>Resetting Dashboard</h3>
+      <p>This operation may take several minutes to complete.</p>
+      <p>Please do not close or refresh the browser.</p>
+    </div>
 </div>

@@ -14,9 +14,7 @@
         </div>
       </div>
     </div>
-    <div class="refresh-section">
-      <button (click)="refreshAllData()" class="refresh-btn">Refresh All Data</button>
-    </div>
+
   </div>
 
   <div *ngIf="loadingPatient" class="no-data">Loading patient data...</div>
@@ -72,11 +70,14 @@
   </div>
   <div class="section-block" *ngIf="getMissingRecommendedVaccines().length === 0">
     <div class="section-title">All recommended vaccines for age {{ getPatientAge() }} are present.</div>
+    <div style="display: flex; justify-content: space-between; gap: 1em; margin-top: 1rem;">
+      <button class="administer-btn" style="width: 48%;" (click)="navigateToAdministerImmunization()">Administer Immunization</button>
+      <button class="administer-btn" style="width: 48%; background: #1976d2;" (click)="navigateToAdministerMedication()">Administer Medication</button>
+    </div>
   </div>
 
   <div class="section-block">
     <div class="section-title">Immunization Records</div>
-    <button (click)="fetchImmunizations()" [disabled]="loadingImmunizations" class="allergy-btn">Refresh Immunization Records</button>
     <div *ngIf="loadingImmunizations" class="no-data">Loading immunization records...</div>
     <div *ngIf="immunizationError" class="no-data" style="color: #b23b3b;">Error: {{ immunizationError }}</div>
     <table *ngIf="!loadingImmunizations && !immunizationError && immunizations.length > 0">
@@ -110,7 +111,6 @@
 
   <div class="section-block">
     <div class="section-title">Conditions</div>
-    <button (click)="fetchConditions()" [disabled]="loadingConditions" class="allergy-btn">Refresh Condition Records</button>
     <div *ngIf="loadingConditions" class="no-data">Loading condition records...</div>
     <div *ngIf="conditionError" class="no-data" style="color: #b23b3b;">Error: {{ conditionError }}</div>
     <table *ngIf="!loadingConditions && !conditionError && conditions.length > 0">

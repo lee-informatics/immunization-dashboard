@@ -2,7 +2,7 @@ import { Component, OnInit, QueryList, ViewChildren, ElementRef, OnDestroy } fro
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PatientService } from '../service/patient.service';
-import { SettingsService } from '../settings/settings.service';
+
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 const TOAST_TIMEOUT = 1500;
@@ -54,13 +54,11 @@ export class PatientListComponent implements OnInit, OnDestroy {
   nameOverflow: boolean[] = [];
 
   private CACHE_KEY = 'immunization_condition_binary_ids';
-  private GROUPED_CACHE_KEY = 'grouped_patient_data';
 
   private subscriptions: Subscription[] = [];
 
   constructor(
     private patientService: PatientService, 
-    private settingsService: SettingsService,
     private router: Router
   ) {}
 
@@ -170,18 +168,9 @@ export class PatientListComponent implements OnInit, OnDestroy {
     setTimeout(() => { this.isAllergyDone = false; }, TOAST_TIMEOUT);
   }
 
-  // Direct import method for developer mode
-  startDirectImport() {
-    if (this.isImporting) return;
-    
-    console.log('[PatientList] Starting direct import...');
-    this.patientService.startImportMonitoring();
-  }
 
-  // Getter for developer mode
-  get isDeveloperMode(): boolean {
-    return this.settingsService.settingsSignal().developer;
-  }
+
+
 
   ngOnDestroy() {
     this.subscriptions.forEach(sub => sub.unsubscribe());

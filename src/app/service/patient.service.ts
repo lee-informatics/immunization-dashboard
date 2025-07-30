@@ -185,9 +185,9 @@ export class PatientService {
     );
   }
 
-  startTransaction(): Observable<{ jobId: string; pollUrl: string }> {
-    console.log('[PatientService] Starting transaction, SERVER_URL:', this.SERVER_URL);
-    return this.http.post<any>(`${this.SERVER_URL}/api/transact`, {}, { observe: 'response' }).pipe(
+  startTransaction(exportJobId: string): Observable<{ jobId: string; pollUrl: string }> {
+    console.log('[PatientService] Starting transaction with exportJobId:', exportJobId, 'SERVER_URL:', this.SERVER_URL);
+    return this.http.post<any>(`${this.SERVER_URL}/api/transact`, { exportJobId }, { observe: 'response' }).pipe(
       map(res => {
         console.log('[PatientService] Transaction response:', res);
         if (res.status === 201) {
@@ -431,8 +431,8 @@ export class PatientService {
             localStorage.setItem('immunization_condition_binary_ids', JSON.stringify(ids));
             this.processAndCachePatientData(ids.Immunization, ids.Condition);
             
-            // Start monitoring import progress
-            this.startImportMonitoring();
+            // Start monitoring import progress with the export job ID
+            this.startImportMonitoring(jobId);
             
             setTimeout(() => { this._isDone.next(false); }, 2500);
           },
@@ -453,15 +453,23 @@ export class PatientService {
     });
   }
 
-  startImportMonitoring(): void {
+  startImportMonitoring(exportJobId?: string): void {
     if (this.isImporting) return;
     
     this._isImporting.next(true);
     this._importStatus.next('IN_PROGRESS');
     this.toastr.info('Starting import...');
     
+    if (!exportJobId) {
+      this.toastr.error('Export job ID is required for import. Please run export first.');
+      this._isImporting.next(false);
+      this._importStatus.next('FAILED');
+      setTimeout(() => { this._importStatus.next('IDLE'); }, 5000);
+      return;
+    }
+    
     // Start the transaction and then poll for status
-    this.startTransaction().subscribe({
+    this.startTransaction(exportJobId).subscribe({
       next: ({ jobId, pollUrl }) => {
         console.log(`[PatientService] Transaction started with jobId: ${jobId}, pollUrl: ${pollUrl}`);
         

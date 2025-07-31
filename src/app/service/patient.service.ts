@@ -418,7 +418,7 @@ export class PatientService {
             localStorage.setItem('lastExportDate', exportDate);
             
             // Extract and cache Immunization/Condition Binary IDs
-            const output = Array.isArray(result?.output) ? result.output : [];
+            const output = Array.isArray(result?.job?.data) ? result.job.data.output : [];
             const ids: { Immunization: string[]; Condition: string[] } = { Immunization: [], Condition: [] };
             for (const entry of output) {
               if ((entry.type === 'Immunization' || entry.type === 'Condition') && entry.url) {
@@ -431,8 +431,13 @@ export class PatientService {
             localStorage.setItem('immunization_condition_binary_ids', JSON.stringify(ids));
             this.processAndCachePatientData(ids.Immunization, ids.Condition);
             
-            // Start monitoring import progress with the export job ID
-            this.startImportMonitoring(jobId);
+            // Only start import monitoring if there is actual data to import
+            if (output.length > 0) {
+              this.startImportMonitoring(jobId);
+            } else {
+              console.log('[PatientService] Export completed but no data to import. Skipping import process.');
+              this.toastr.info('No export data.');
+            }
             
             setTimeout(() => { this._isDone.next(false); }, 2500);
           },
